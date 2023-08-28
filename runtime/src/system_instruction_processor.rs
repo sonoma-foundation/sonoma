@@ -4,10 +4,10 @@ use {
         withdraw_nonce_account,
     },
     log::*,
-    solana_program_runtime::{
+    sonoma_program_runtime::{
         ic_msg, invoke_context::InvokeContext, sysvar_cache::get_sysvar_with_account_check,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::AccountSharedData,
         account_utils::StateMut,
         feature_set,
@@ -564,7 +564,7 @@ pub enum SystemAccountKind {
 }
 
 pub fn get_system_account_kind(account: &AccountSharedData) -> Option<SystemAccountKind> {
-    use solana_sdk::account::ReadableAccount;
+    use sonoma_sdk::account::ReadableAccount;
     if system_program::check_id(account.owner()) {
         if account.data().is_empty() {
             Some(SystemAccountKind::System)
@@ -585,7 +585,7 @@ pub fn get_system_account_kind(account: &AccountSharedData) -> Option<SystemAcco
 #[cfg(test)]
 mod tests {
     #[allow(deprecated)]
-    use solana_sdk::{
+    use sonoma_sdk::{
         account::{self, Account, AccountSharedData, ReadableAccount},
         client::SyncClient,
         fee_calculator::FeeCalculator,
@@ -611,7 +611,7 @@ mod tests {
         super::*,
         crate::{bank::Bank, bank_client::BankClient},
         bincode::serialize,
-        solana_program_runtime::invoke_context::{
+        sonoma_program_runtime::invoke_context::{
             mock_process_instruction, InvokeContext, ProcessInstructionWithContext,
         },
         std::sync::Arc,
@@ -662,7 +662,7 @@ mod tests {
 
     #[test]
     fn test_create_account() {
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let to = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
@@ -699,7 +699,7 @@ mod tests {
 
     #[test]
     fn test_create_account_with_seed() {
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let seed = "shiny pepper";
         let to = Pubkey::create_with_seed(&from, seed, &new_owner).unwrap();
@@ -739,7 +739,7 @@ mod tests {
 
     #[test]
     fn test_create_account_with_seed_separate_base_account() {
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let base = Pubkey::new_unique();
         let seed = "shiny pepper";
@@ -802,7 +802,7 @@ mod tests {
 
     #[test]
     fn test_create_account_with_seed_missing_sig() {
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let seed = "dull boy";
         let to = Pubkey::create_with_seed(&from, seed, &new_owner).unwrap();
@@ -839,7 +839,7 @@ mod tests {
     #[test]
     fn test_create_with_zero_lamports() {
         // create account with zero lamports transferred
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &Pubkey::new_unique()); // not from system account
         let to = Pubkey::new_unique();
@@ -877,7 +877,7 @@ mod tests {
     #[test]
     fn test_create_negative_lamports() {
         // Attempt to create account with more lamports than from_account has
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &Pubkey::new_unique());
         let to = Pubkey::new_unique();
@@ -960,13 +960,13 @@ mod tests {
 
     #[test]
     fn test_create_already_in_use() {
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
         let owned_key = Pubkey::new_unique();
 
         // Attempt to create system account in account already owned by another program
-        let original_program_owner = Pubkey::from([5; 32]);
+        let original_program_owner = Pubkey::new(&[5; 32]);
         let owned_account = AccountSharedData::new(0, 0, &original_program_owner);
         let unchanged_account = owned_account.clone();
         let accounts = process_instruction(
@@ -1057,7 +1057,7 @@ mod tests {
     #[test]
     fn test_create_unsigned() {
         // Attempt to create an account without signing the transfer
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
         let owned_key = Pubkey::new_unique();
@@ -1180,7 +1180,7 @@ mod tests {
     #[test]
     fn test_create_data_populated() {
         // Attempt to create system account in account with populated data
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
         let populated_key = Pubkey::new_unique();
@@ -1253,7 +1253,7 @@ mod tests {
 
     #[test]
     fn test_assign() {
-        let new_owner = Pubkey::from([9; 32]);
+        let new_owner = Pubkey::new(&[9; 32]);
         let pubkey = Pubkey::new_unique();
         let account = AccountSharedData::new(100, 0, &system_program::id());
 
@@ -1352,7 +1352,7 @@ mod tests {
     fn test_transfer_lamports() {
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
-        let to = Pubkey::from([3; 32]);
+        let to = Pubkey::new(&[3; 32]);
         let to_account = AccountSharedData::new(1, 0, &to); // account owner should not matter
         let transaction_accounts = vec![(from, from_account), (to, to_account)];
         let instruction_accounts = vec![
@@ -1427,12 +1427,12 @@ mod tests {
     #[test]
     fn test_transfer_with_seed() {
         let base = Pubkey::new_unique();
-        let base_account = AccountSharedData::new(100, 0, &Pubkey::from([2; 32])); // account owner should not matter
+        let base_account = AccountSharedData::new(100, 0, &Pubkey::new(&[2; 32])); // account owner should not matter
         let from_seed = "42".to_string();
         let from_owner = system_program::id();
         let from = Pubkey::create_with_seed(&base, from_seed.as_str(), &from_owner).unwrap();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
-        let to = Pubkey::from([3; 32]);
+        let to = Pubkey::new(&[3; 32]);
         let to_account = AccountSharedData::new(1, 0, &to); // account owner should not matter
         let transaction_accounts =
             vec![(from, from_account), (base, base_account), (to, to_account)];
@@ -1519,7 +1519,7 @@ mod tests {
             get_system_account_kind(&from_account),
             Some(SystemAccountKind::Nonce)
         );
-        let to = Pubkey::from([3; 32]);
+        let to = Pubkey::new(&[3; 32]);
         let to_account = AccountSharedData::new(1, 0, &to); // account owner should not matter
 
         process_instruction(
@@ -1841,7 +1841,7 @@ mod tests {
         let blockhash = hash(&serialize(&0).unwrap());
         #[allow(deprecated)]
         let new_recent_blockhashes_account =
-            solana_sdk::recent_blockhashes_account::create_account_with_data_for_test(
+            sonoma_sdk::recent_blockhashes_account::create_account_with_data_for_test(
                 vec![IterItem(0u64, &blockhash, 0); sysvar::recent_blockhashes::MAX_ENTRIES]
                     .into_iter(),
             );
@@ -2133,7 +2133,7 @@ mod tests {
         let blockhash_id = sysvar::recent_blockhashes::id();
         #[allow(deprecated)]
         let new_recent_blockhashes_account =
-            solana_sdk::recent_blockhashes_account::create_account_with_data_for_test(
+            sonoma_sdk::recent_blockhashes_account::create_account_with_data_for_test(
                 vec![].into_iter(),
             );
         process_instruction(
@@ -2200,7 +2200,7 @@ mod tests {
         );
         #[allow(deprecated)]
         let new_recent_blockhashes_account =
-            solana_sdk::recent_blockhashes_account::create_account_with_data_for_test(
+            sonoma_sdk::recent_blockhashes_account::create_account_with_data_for_test(
                 vec![].into_iter(),
             );
         process_instruction(

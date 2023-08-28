@@ -6,18 +6,17 @@ use {
     rand_chacha::ChaChaRng,
     solana_gossip::{
         cluster_info::{compute_retransmit_peers, ClusterInfo, DATA_PLANE_FANOUT},
+        contact_info::ContactInfo,
         crds::GossipRoute,
         crds_gossip_pull::CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS,
         crds_value::{CrdsData, CrdsValue},
-        legacy_contact_info::LegacyContactInfo as ContactInfo,
         weighted_shuffle::WeightedShuffle,
     },
     solana_ledger::shred::ShredId,
     solana_runtime::bank::Bank,
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Epoch, Slot},
         feature_set,
-        native_token::LAMPORTS_PER_SOL,
         pubkey::Pubkey,
         signature::Keypair,
         timing::timestamp,
@@ -34,16 +33,9 @@ use {
         sync::{Arc, Mutex},
         time::{Duration, Instant},
     },
-    thiserror::Error,
 };
 
 pub(crate) const MAX_NUM_TURBINE_HOPS: usize = 4;
-
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Loopback from slot leader: {leader}, shred: {shred:?}")]
-    Loopback { leader: Pubkey, shred: ShredId },
-}
 
 #[allow(clippy::large_enum_variant)]
 enum NodeId {
@@ -108,42 +100,32 @@ impl Node {
 
 impl<T> ClusterNodes<T> {
     pub(crate) fn submit_metrics(&self, name: &'static str, now: u64) {
-        let mut epoch_stakes = 0;
         let mut num_nodes_dead = 0;
         let mut num_nodes_staked = 0;
         let mut num_nodes_stale = 0;
-        let mut stake_dead = 0;
-        let mut stake_stale = 0;
         for node in &self.nodes {
-            epoch_stakes += node.stake;
             if node.stake != 0u64 {
                 num_nodes_staked += 1;
             }
             match node.contact_info() {
                 None => {
                     num_nodes_dead += 1;
-                    stake_dead += node.stake;
                 }
-                Some(&ContactInfo { wallclock, .. }) => {
-                    let age = now.saturating_sub(wallclock);
+                Some(node) => {
+                    let age = now.saturating_sub(node.wallclock);
                     if age > CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS {
                         num_nodes_stale += 1;
-                        stake_stale += node.stake;
                     }
                 }
             }
         }
         num_nodes_stale += num_nodes_dead;
-        stake_stale += stake_dead;
         datapoint_info!(
             name,
-            ("epoch_stakes", epoch_stakes / LAMPORTS_PER_SOL, i64),
             ("num_nodes", self.nodes.len(), i64),
             ("num_nodes_dead", num_nodes_dead, i64),
             ("num_nodes_staked", num_nodes_staked, i64),
             ("num_nodes_stale", num_nodes_stale, i64),
-            ("stake_dead", stake_dead / LAMPORTS_PER_SOL, i64),
-            ("stake_stale", stake_stale / LAMPORTS_PER_SOL, i64),
         );
     }
 }
@@ -168,14 +150,14 @@ impl ClusterNodes<RetransmitStage> {
         shred: &ShredId,
         root_bank: &Bank,
         fanout: usize,
-    ) -> Result<(/*root_distance:*/ usize, Vec<SocketAddr>), Error> {
+    ) -> (/*root_distance:*/ usize, Vec<SocketAddr>) {
         let RetransmitPeers {
             root_distance,
             neighbors,
             children,
             addrs,
             frwds,
-        } = self.get_retransmit_peers(slot_leader, shred, root_bank, fanout)?;
+        } = self.get_retransmit_peers(slot_leader, shred, root_bank, fanout);
         if neighbors.is_empty() {
             let peers = children
                 .into_iter()
@@ -183,7 +165,7 @@ impl ClusterNodes<RetransmitStage> {
                 .filter(|node| addrs.get(&node.tvu) == Some(&node.id))
                 .map(|node| node.tvu)
                 .collect();
-            return Ok((root_distance, peers));
+            return (root_distance, peers);
         }
         // If the node is on the critical path (i.e. the first node in each
         // neighborhood), it should send the packet to tvu socket of its
@@ -195,7 +177,7 @@ impl ClusterNodes<RetransmitStage> {
                 .filter_map(Node::contact_info)
                 .filter(|node| frwds.get(&node.tvu_forwards) == Some(&node.id))
                 .map(|node| node.tvu_forwards);
-            return Ok((root_distance, peers.collect()));
+            return (root_distance, peers.collect());
         }
         // First neighbor is this node itself, so skip it.
         let peers = neighbors[1..]
@@ -210,7 +192,7 @@ impl ClusterNodes<RetransmitStage> {
                     .filter(|node| addrs.get(&node.tvu) == Some(&node.id))
                     .map(|node| node.tvu),
             );
-        Ok((root_distance, peers.collect()))
+        (root_distance, peers.collect())
     }
 
     pub fn get_retransmit_peers(
@@ -219,19 +201,15 @@ impl ClusterNodes<RetransmitStage> {
         shred: &ShredId,
         root_bank: &Bank,
         fanout: usize,
-    ) -> Result<RetransmitPeers, Error> {
+    ) -> RetransmitPeers {
         let shred_seed = shred.seed(slot_leader);
         let mut weighted_shuffle = self.weighted_shuffle.clone();
         // Exclude slot leader from list of nodes.
         if slot_leader == &self.pubkey {
-            return Err(Error::Loopback {
-                leader: *slot_leader,
-                shred: *shred,
-            });
-        }
-        if let Some(index) = self.index.get(slot_leader) {
+            error!("retransmit from slot leader: {}", slot_leader);
+        } else if let Some(index) = self.index.get(slot_leader) {
             weighted_shuffle.remove_index(*index);
-        }
+        };
         let mut addrs = HashMap::<SocketAddr, Pubkey>::with_capacity(self.nodes.len());
         let mut frwds = HashMap::<SocketAddr, Pubkey>::with_capacity(self.nodes.len());
         let mut rng = ChaChaRng::from_seed(shred_seed);
@@ -263,13 +241,13 @@ impl ClusterNodes<RetransmitStage> {
                 3 // If changed, update MAX_NUM_TURBINE_HOPS.
             };
             let peers = get_retransmit_peers(fanout, self_index, &nodes);
-            return Ok(RetransmitPeers {
+            return RetransmitPeers {
                 root_distance,
                 neighbors: Vec::default(),
                 children: peers.collect(),
                 addrs,
                 frwds,
-            });
+            };
         }
         let root_distance = if self_index == 0 {
             0
@@ -284,13 +262,13 @@ impl ClusterNodes<RetransmitStage> {
         // Assert that the node itself is included in the set of neighbors, at
         // the right offset.
         debug_assert_eq!(neighbors[self_index % fanout].pubkey(), self.pubkey);
-        Ok(RetransmitPeers {
+        RetransmitPeers {
             root_distance,
             neighbors,
             children,
             addrs,
             frwds,
-        })
+        }
     }
 }
 
@@ -497,7 +475,7 @@ pub fn make_test_cluster<R: Rng>(
         let mut gossip_crds = cluster_info.gossip.crds.write().unwrap();
         // First node is pushed to crds table by ClusterInfo constructor.
         for node in nodes.iter().skip(1) {
-            let node = CrdsData::LegacyContactInfo(node.clone());
+            let node = CrdsData::ContactInfo(node.clone());
             let node = CrdsValue::new_unsigned(node);
             assert_eq!(
                 gossip_crds.insert(node, now, GossipRoute::LocalMessage),
@@ -547,12 +525,7 @@ fn enable_turbine_fanout_experiments(shred_slot: Slot, root_bank: &Bank) -> bool
 }
 
 // Returns true if the feature is effective for the shred slot.
-#[must_use]
-pub(crate) fn check_feature_activation(
-    feature: &Pubkey,
-    shred_slot: Slot,
-    root_bank: &Bank,
-) -> bool {
+fn check_feature_activation(feature: &Pubkey, shred_slot: Slot, root_bank: &Bank) -> bool {
     match root_bank.feature_set.activated_slot(feature) {
         None => false,
         Some(feature_slot) => {

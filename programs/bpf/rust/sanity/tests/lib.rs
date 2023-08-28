@@ -2,8 +2,8 @@
 
 use {
     solana_bpf_rust_sanity::process_instruction,
-    solana_program_test::*,
-    solana_sdk::{
+    sonoma_program_test::*,
+    sonoma_sdk::{
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
         signature::{Keypair, Signer},

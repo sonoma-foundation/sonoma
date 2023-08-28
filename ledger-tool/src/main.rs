@@ -12,7 +12,7 @@ use {
     regex::Regex,
     serde::Serialize,
     serde_json::json,
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         input_parsers::{cluster_type_of, pubkey_of, pubkeys_of},
         input_validators::{
             is_parsable, is_pow2, is_pubkey, is_pubkey_or_keypair, is_slot, is_valid_percentage,
@@ -51,10 +51,11 @@ use {
         snapshot_minimizer::SnapshotMinimizer,
         snapshot_utils::{
             self, ArchiveFormat, SnapshotVersion, DEFAULT_ARCHIVE_COMPRESSION,
-            SUPPORTED_ARCHIVE_COMPRESSION,
+            DEFAULT_MAX_FULL_SNAPSHOT_ARCHIVES_TO_RETAIN,
+            DEFAULT_MAX_INCREMENTAL_SNAPSHOT_ARCHIVES_TO_RETAIN, SUPPORTED_ARCHIVE_COMPRESSION,
         },
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::{AccountSharedData, ReadableAccount, WritableAccount},
         account_utils::StateMut,
         clock::{Epoch, Slot},
@@ -69,9 +70,7 @@ use {
         shred_version::compute_shred_version,
         stake::{self, state::StakeState},
         system_program,
-        transaction::{
-            MessageHash, SanitizedTransaction, SimpleAddressLoader, VersionedTransaction,
-        },
+        transaction::{MessageHash, SanitizedTransaction, SimpleAddressLoader},
     },
     solana_stake_program::stake_state::{self, PointValue},
     solana_vote_program::{
@@ -101,16 +100,6 @@ mod ledger_path;
 enum LedgerOutputMethod {
     Print,
     Json,
-}
-
-fn get_program_ids(tx: &VersionedTransaction) -> impl Iterator<Item = &Pubkey> + '_ {
-    let message = &tx.message;
-    let account_keys = message.static_account_keys();
-
-    message
-        .instructions()
-        .iter()
-        .map(|ix| ix.program_id(account_keys))
 }
 
 fn output_slot_rewards(blockstore: &Blockstore, slot: Slot, method: &LedgerOutputMethod) {
@@ -253,8 +242,27 @@ fn output_slot(
             transactions += entry.transactions.len();
             num_hashes += entry.num_hashes;
             for transaction in entry.transactions {
-                for program_id in get_program_ids(&transaction) {
-                    *program_ids.entry(*program_id).or_insert(0) += 1;
+                let tx_signature = transaction.signatures[0];
+                let sanitize_result = SanitizedTransaction::try_create(
+                    transaction,
+                    MessageHash::Compute,
+                    None,
+                    SimpleAddressLoader::Disabled,
+                    true, // require_static_program_ids
+                );
+
+                match sanitize_result {
+                    Ok(transaction) => {
+                        for (program_id, _) in transaction.message().program_instructions_iter() {
+                            *program_ids.entry(*program_id).or_insert(0) += 1;
+                        }
+                    }
+                    Err(err) => {
+                        warn!(
+                            "Failed to analyze unsupported transaction {}: {:?}",
+                            tx_signature, err
+                        );
+                    }
                 }
             }
         }
@@ -888,31 +896,11 @@ fn load_bank_forks(
     }
 
     let account_paths = if let Some(account_paths) = arg_matches.value_of("account_paths") {
-        // If this blockstore access is Primary, no other process (solana-validator) can hold
-        // Primary access. So, allow a custom accounts path without worry of wiping the accounts
-        // of solana-validator.
         if !blockstore.is_primary_access() {
-            // Attempt to open the Blockstore in Primary access; if successful, no other process
-            // was holding Primary so allow things to proceed with custom accounts path. Release
-            // the Primary access instead of holding it to give priority to solana-validator over
-            // solana-ledger-tool should solana-validator start before we've finished.
-            info!(
-                "Checking if another process currently holding Primary access to {:?}",
-                blockstore.ledger_path()
-            );
-            if Blockstore::open_with_options(
-                blockstore.ledger_path(),
-                BlockstoreOptions {
-                    access_type: AccessType::PrimaryForMaintenance,
-                    ..BlockstoreOptions::default()
-                },
-            )
-            .is_err()
-            {
-                // Couldn't get Primary access, error out to be defensive.
-                eprintln!("Error: custom accounts path is not supported under secondary access");
-                exit(1);
-            }
+            // Be defensive, when default account dir is explicitly specified, it's still possible
+            // to wipe the dir possibly shared by the running validator!
+            eprintln!("Error: custom accounts path is not supported under secondary access");
+            exit(1);
         }
         account_paths.split(',').map(PathBuf::from).collect()
     } else if blockstore.is_primary_access() {
@@ -1101,11 +1089,6 @@ fn main() {
     const DEFAULT_ROOT_COUNT: &str = "1";
     const DEFAULT_LATEST_OPTIMISTIC_SLOTS_COUNT: &str = "1";
     const DEFAULT_MAX_SLOTS_ROOT_REPAIR: &str = "2000";
-    // Use std::usize::MAX for DEFAULT_MAX_*_SNAPSHOTS_TO_RETAIN such that
-    // ledger-tool commands won't accidentally remove any snapshots by default
-    const DEFAULT_MAX_FULL_SNAPSHOT_ARCHIVES_TO_RETAIN: usize = std::usize::MAX;
-    const DEFAULT_MAX_INCREMENTAL_SNAPSHOT_ARCHIVES_TO_RETAIN: usize = std::usize::MAX;
-
     solana_logger::setup_with_default("solana=info");
 
     let starting_slot_arg = Arg::with_name("starting_slot")
@@ -1138,16 +1121,11 @@ fn main() {
         .value_name("MEGABYTES")
         .validator(is_parsable::<usize>)
         .takes_value(true)
-        .requires("enable_accounts_disk_index")
         .help("How much memory the accounts index can consume. If this is exceeded, some account index entries will be stored on disk.");
     let disable_disk_index = Arg::with_name("disable_accounts_disk_index")
         .long("disable-accounts-disk-index")
         .help("Disable the disk-based accounts index. It is enabled by default. The entire accounts index will be kept in memory.")
-        .conflicts_with("enable_accounts_disk_index");
-    let enable_disk_index = Arg::with_name("enable_accounts_disk_index")
-        .long("enable-accounts-disk-index")
-        .conflicts_with("disable_accounts_disk_index")
-        .help("Enable the disk-based accounts index if it is disabled by default.");
+        .conflicts_with("accounts_index_memory_limit_mb");
     let accountsdb_skip_shrink = Arg::with_name("accounts_db_skip_shrink")
         .long("accounts-db-skip-shrink")
         .help(
@@ -1561,7 +1539,6 @@ fn main() {
             .arg(&accounts_index_bins)
             .arg(&accounts_index_limit)
             .arg(&disable_disk_index)
-            .arg(&enable_disk_index)
             .arg(&accountsdb_skip_shrink)
             .arg(&accounts_filler_count)
             .arg(&accounts_filler_size)
@@ -1623,9 +1600,6 @@ fn main() {
             .about("Create a new ledger snapshot")
             .arg(&no_snapshot_arg)
             .arg(&account_paths_arg)
-            .arg(&accounts_index_limit)
-            .arg(&disable_disk_index)
-            .arg(&enable_disk_index)
             .arg(&skip_rewrites_arg)
             .arg(&accounts_db_skip_initial_hash_calc_arg)
             .arg(&ancient_append_vecs)
@@ -1902,20 +1876,7 @@ fn main() {
                     .long("no-compaction")
                     .required(false)
                     .takes_value(false)
-                    .help("--no-compaction is deprecated, ledger compaction \
-                           after purge is disabled by default")
-                    .conflicts_with("enable_compaction")
-                    .hidden(true)
-            )
-            .arg(
-                Arg::with_name("enable_compaction")
-                    .long("enable-compaction")
-                    .required(false)
-                    .takes_value(false)
-                    .help("Perform ledger compaction after purge. Compaction \
-                           will optimize storage space, but may take a long \
-                           time to complete.")
-                    .conflicts_with("no_compaction")
+                    .help("Skip ledger compaction after purge")
             )
             .arg(
                 Arg::with_name("dead_slots_only")
@@ -2472,13 +2433,10 @@ fn main() {
                     value_t!(arg_matches, "accounts_index_memory_limit_mb", usize).ok()
                 {
                     IndexLimitMb::Limit(limit)
-                } else if arg_matches.is_present("enable_accounts_disk_index") {
-                    IndexLimitMb::Unspecified
-                } else {
-                    if arg_matches.is_present("disable_accounts_disk_index") {
-                        warn!("ignoring `--disable-accounts-disk-index` as it specifies default behavior");
-                    }
+                } else if arg_matches.is_present("disable_accounts_disk_index") {
                     IndexLimitMb::InMemOnly
+                } else {
+                    IndexLimitMb::Unspecified
                 };
 
                 {
@@ -2760,24 +2718,7 @@ fn main() {
                     output_directory.display()
                 );
 
-                let accounts_index_config = AccountsIndexConfig {
-                    index_limit_mb: if let Some(limit) =
-                        value_t!(arg_matches, "accounts_index_memory_limit_mb", usize).ok()
-                    {
-                        IndexLimitMb::Limit(limit)
-                    } else if arg_matches.is_present("enable_accounts_disk_index") {
-                        IndexLimitMb::Unspecified
-                    } else {
-                        if arg_matches.is_present("disable_accounts_disk_index") {
-                            warn!("ignoring `--disable-accounts-disk-index` as it specifies default behavior");
-                        }
-                        IndexLimitMb::InMemOnly
-                    },
-                    ..AccountsIndexConfig::default()
-                };
-
                 let accounts_db_config = Some(AccountsDbConfig {
-                    index: Some(accounts_index_config),
                     skip_rewrites: arg_matches.is_present("accounts_db_skip_rewrites"),
                     ancient_append_vecs: arg_matches.is_present("accounts_db_ancient_append_vecs"),
                     skip_initial_hash_calc: arg_matches
@@ -3144,7 +3085,7 @@ fn main() {
                     .unwrap()
                     .into_iter()
                     .filter(|(pubkey, _account, _slot)| {
-                        include_sysvars || !solana_sdk::sysvar::is_sysvar_id(pubkey)
+                        include_sysvars || !sonoma_sdk::sysvar::is_sysvar_id(pubkey)
                     })
                     .map(|(pubkey, account, slot)| (pubkey, (account, slot)))
                     .collect();
@@ -3517,7 +3458,7 @@ fn main() {
                             for (pubkey, warped_account) in all_accounts {
                                 // Don't output sysvars; it's always updated but not related to
                                 // inflation.
-                                if solana_sdk::sysvar::is_sysvar_id(&pubkey) {
+                                if sonoma_sdk::sysvar::is_sysvar_id(&pubkey) {
                                     continue;
                                 }
 
@@ -3709,16 +3650,17 @@ fn main() {
             ("purge", Some(arg_matches)) => {
                 let start_slot = value_t_or_exit!(arg_matches, "start_slot", Slot);
                 let end_slot = value_t!(arg_matches, "end_slot", Slot).ok();
-                let perform_compaction = arg_matches.is_present("enable_compaction");
-                if arg_matches.is_present("no_compaction") {
-                    warn!("--no-compaction is deprecated and is now the default behavior.");
-                }
+                let no_compaction = arg_matches.is_present("no_compaction");
                 let dead_slots_only = arg_matches.is_present("dead_slots_only");
                 let batch_size = value_t_or_exit!(arg_matches, "batch_size", usize);
-
+                let access_type = if !no_compaction {
+                    AccessType::Primary
+                } else {
+                    AccessType::PrimaryForMaintenance
+                };
                 let blockstore = open_blockstore(
                     &ledger_path,
-                    AccessType::PrimaryForMaintenance,
+                    access_type,
                     wal_recovery_mode,
                     &shred_storage_type,
                 );
@@ -3749,19 +3691,19 @@ fn main() {
                     exit(1);
                 }
                 info!(
-                "Purging data from slots {} to {} ({} slots) (do compaction: {}) (dead slot only: {})",
+                "Purging data from slots {} to {} ({} slots) (skip compaction: {}) (dead slot only: {})",
                 start_slot,
                 end_slot,
                 end_slot - start_slot,
-                perform_compaction,
+                no_compaction,
                 dead_slots_only,
             );
                 let purge_from_blockstore = |start_slot, end_slot| {
                     blockstore.purge_from_next_slots(start_slot, end_slot);
-                    if perform_compaction {
-                        blockstore.purge_and_compact_slots(start_slot, end_slot);
-                    } else {
+                    if no_compaction {
                         blockstore.purge_slots(start_slot, end_slot, PurgeType::Exact);
+                    } else {
+                        blockstore.purge_and_compact_slots(start_slot, end_slot);
                     }
                 };
                 if !dead_slots_only {

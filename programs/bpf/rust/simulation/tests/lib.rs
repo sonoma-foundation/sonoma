@@ -2,8 +2,8 @@
 
 use {
     solana_bpf_rust_simulation::process_instruction,
-    solana_program_test::{processor, tokio, ProgramTest},
-    solana_sdk::{
+    sonoma_program_test::{processor, tokio, ProgramTest},
+    sonoma_sdk::{
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
         signature::Signer,

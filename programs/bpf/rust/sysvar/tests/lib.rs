@@ -1,7 +1,7 @@
 use {
     solana_bpf_rust_sysvar::process_instruction,
-    solana_program_test::*,
-    solana_sdk::{
+    sonoma_program_test::*,
+    sonoma_sdk::{
         feature_set::disable_fees_sysvar,
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,

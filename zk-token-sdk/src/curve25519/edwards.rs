@@ -143,7 +143,7 @@ mod target_arch {
     pub fn validate_edwards(point: &PodEdwardsPoint) -> bool {
         let mut validate_result = 0u8;
         let result = unsafe {
-            solana_program::syscalls::sol_curve_validate_point(
+            sonoma_program::syscalls::sol_curve_validate_point(
                 CURVE25519_EDWARDS,
                 &point.0 as *const u8,
                 &mut validate_result,
@@ -158,7 +158,7 @@ mod target_arch {
     ) -> Option<PodEdwardsPoint> {
         let mut result_point = PodEdwardsPoint::zeroed();
         let result = unsafe {
-            solana_program::syscalls::sol_curve_group_op(
+            sonoma_program::syscalls::sol_curve_group_op(
                 CURVE25519_EDWARDS,
                 ADD,
                 &left_point.0 as *const u8,
@@ -180,7 +180,7 @@ mod target_arch {
     ) -> Option<PodEdwardsPoint> {
         let mut result_point = PodEdwardsPoint::zeroed();
         let result = unsafe {
-            solana_program::syscalls::sol_curve_group_op(
+            sonoma_program::syscalls::sol_curve_group_op(
                 CURVE25519_EDWARDS,
                 SUB,
                 &left_point.0 as *const u8,
@@ -202,33 +202,11 @@ mod target_arch {
     ) -> Option<PodEdwardsPoint> {
         let mut result_point = PodEdwardsPoint::zeroed();
         let result = unsafe {
-            solana_program::syscalls::sol_curve_group_op(
+            sonoma_program::syscalls::sol_curve_group_op(
                 CURVE25519_EDWARDS,
                 MUL,
                 &scalar.0 as *const u8,
                 &point.0 as *const u8,
-                &mut result_point.0 as *mut u8,
-            )
-        };
-
-        if result == 0 {
-            Some(result_point)
-        } else {
-            None
-        }
-    }
-
-    pub fn multiscalar_multiply_edwards(
-        scalars: &[PodScalar],
-        points: &[PodEdwardsPoint],
-    ) -> Option<PodEdwardsPoint> {
-        let mut result_point = PodEdwardsPoint::zeroed();
-        let result = unsafe {
-            solana_program::syscalls::sol_curve_multiscalar_mul(
-                CURVE25519_EDWARDS,
-                scalars.as_ptr() as *const u8,
-                points.as_ptr() as *const u8,
-                points.len() as u64,
                 &mut result_point.0 as *mut u8,
             )
         };

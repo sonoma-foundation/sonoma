@@ -3,7 +3,7 @@ use {
     sonoma_cli::cli::{process_command, CliCommand, CliConfig},
     solana_client::rpc_client::RpcClient,
     solana_faucet::faucet::run_local_faucet,
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         native_token::sol_to_lamports,
         signature::{Keypair, Signer},

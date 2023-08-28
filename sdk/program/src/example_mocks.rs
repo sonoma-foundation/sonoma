@@ -23,7 +23,7 @@ pub mod solana_client {
 
     pub mod nonce_utils {
         use {
-            super::super::solana_sdk::{
+            super::super::sonoma_sdk::{
                 account::ReadableAccount, account_utils::StateMut, pubkey::Pubkey,
             },
             crate::nonce::state::{Data, DurableNonce, Versions},
@@ -47,7 +47,7 @@ pub mod solana_client {
     pub mod rpc_client {
         use {
             super::{
-                super::solana_sdk::{
+                super::sonoma_sdk::{
                     account::Account, hash::Hash, pubkey::Pubkey, signature::Signature,
                     transaction::Transaction,
                 },
@@ -106,12 +106,12 @@ pub mod solana_client {
     }
 }
 
-/// Re-exports and mocks of solana-program modules that mirror those from
-/// solana-program.
+/// Re-exports and mocks of sonoma-program modules that mirror those from
+/// sonoma-program.
 ///
-/// This lets examples in solana-program appear to be written as client
+/// This lets examples in sonoma-program appear to be written as client
 /// programs.
-pub mod solana_sdk {
+pub mod sonoma_sdk {
     pub use crate::{
         address_lookup_table_account, hash, instruction, keccak, message, nonce,
         pubkey::{self, Pubkey},

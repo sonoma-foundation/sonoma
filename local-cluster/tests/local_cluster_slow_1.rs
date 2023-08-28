@@ -25,7 +25,7 @@ use {
         validator_configs::*,
     },
     solana_runtime::vote_parser,
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, MAX_PROCESSING_AGE},
         hash::Hash,
         pubkey::Pubkey,

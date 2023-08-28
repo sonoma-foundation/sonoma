@@ -18,7 +18,7 @@ use {
         validator_configs::make_identical_validator_configs,
     },
     solana_rpc::rpc::JsonRpcConfig,
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         signature::{Keypair, Signer},
     },

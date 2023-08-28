@@ -15,7 +15,7 @@ use {
     },
     solana_gossip::{
         cluster_info::{ClusterInfo, ClusterInfoError},
-        legacy_contact_info::{LegacyContactInfo as ContactInfo, LegacyContactInfo},
+        contact_info::ContactInfo,
         ping_pong::{self, PingCache, Pong},
         weighted_shuffle::WeightedShuffle,
     },
@@ -30,7 +30,7 @@ use {
         packet::{Packet, PacketBatch, PacketBatchRecycler},
     },
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot,
         genesis_config::ClusterType,
         hash::{Hash, HASH_BYTES},
@@ -171,7 +171,6 @@ struct ServeRepairStats {
     ping_cache_check_failed: usize,
     pings_sent: usize,
     decode_time_us: u64,
-    handle_requests_time_us: u64,
     err_time_skew: usize,
     err_malformed: usize,
     err_sig_verify: usize,
@@ -205,13 +204,13 @@ pub(crate) type Ping = ping_pong::Ping<[u8; REPAIR_PING_TOKEN_SIZE]>;
 /// Window protocol messages
 #[derive(Serialize, Deserialize, Debug)]
 pub enum RepairProtocol {
-    LegacyWindowIndex(LegacyContactInfo, Slot, u64),
-    LegacyHighestWindowIndex(LegacyContactInfo, Slot, u64),
-    LegacyOrphan(LegacyContactInfo, Slot),
-    LegacyWindowIndexWithNonce(LegacyContactInfo, Slot, u64, Nonce),
-    LegacyHighestWindowIndexWithNonce(LegacyContactInfo, Slot, u64, Nonce),
-    LegacyOrphanWithNonce(LegacyContactInfo, Slot, Nonce),
-    LegacyAncestorHashes(LegacyContactInfo, Slot, Nonce),
+    LegacyWindowIndex(ContactInfo, Slot, u64),
+    LegacyHighestWindowIndex(ContactInfo, Slot, u64),
+    LegacyOrphan(ContactInfo, Slot),
+    LegacyWindowIndexWithNonce(ContactInfo, Slot, u64, Nonce),
+    LegacyHighestWindowIndexWithNonce(ContactInfo, Slot, u64, Nonce),
+    LegacyOrphanWithNonce(ContactInfo, Slot, Nonce),
+    LegacyAncestorHashes(ContactInfo, Slot, Nonce),
     Pong(ping_pong::Pong),
     WindowIndex {
         header: RepairRequestHeader,
@@ -525,8 +524,7 @@ impl ServeRepair {
             decoded_reqs.truncate(MAX_REQUESTS_PER_ITERATION);
         }
 
-        let handle_requests_start = Instant::now();
-        self.handle_requests(
+        self.handle_packets(
             ping_cache,
             recycler,
             blockstore,
@@ -536,7 +534,6 @@ impl ServeRepair {
             data_budget,
             cluster_type,
         );
-        stats.handle_requests_time_us += handle_requests_start.elapsed().as_micros() as u64;
 
         Ok(())
     }
@@ -613,11 +610,6 @@ impl ServeRepair {
             ),
             ("pings_sent", stats.pings_sent, i64),
             ("decode_time_us", stats.decode_time_us, i64),
-            (
-                "handle_requests_time_us",
-                stats.handle_requests_time_us,
-                i64
-            ),
             ("err_time_skew", stats.err_time_skew, i64),
             ("err_malformed", stats.err_malformed, i64),
             ("err_sig_verify", stats.err_sig_verify, i64),
@@ -783,7 +775,7 @@ impl ServeRepair {
         (check, ping_pkt)
     }
 
-    fn handle_requests(
+    fn handle_packets(
         &self,
         ping_cache: &mut PingCache,
         recycler: &PacketBatchRecycler,
@@ -1209,7 +1201,7 @@ mod tests {
         },
         solana_perf::packet::{deserialize_from_with_limit, Packet},
         solana_runtime::bank::Bank,
-        solana_sdk::{
+        sonoma_sdk::{
             feature_set::FeatureSet, hash::Hash, pubkey::Pubkey, signature::Keypair,
             timing::timestamp,
         },
@@ -1258,11 +1250,11 @@ mod tests {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new_for_tests(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me));
         let serve_repair = ServeRepair::new(cluster_info.clone(), bank_forks);
         let keypair = cluster_info.keypair().clone();
-        let repair_peer_id = solana_sdk::pubkey::new_rand();
+        let repair_peer_id = sonoma_sdk::pubkey::new_rand();
         let repair_request = ShredRepairType::Orphan(123);
 
         let rsp = serve_repair
@@ -1297,9 +1289,9 @@ mod tests {
     fn test_serialize_deserialize_ancestor_hashes_request() {
         let slot: Slot = 50;
         let nonce = 70;
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me));
-        let repair_peer_id = solana_sdk::pubkey::new_rand();
+        let repair_peer_id = sonoma_sdk::pubkey::new_rand();
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let keypair = cluster_info.keypair().clone();
 
@@ -1338,11 +1330,11 @@ mod tests {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new_for_tests(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me));
         let serve_repair = ServeRepair::new(cluster_info.clone(), bank_forks);
         let keypair = cluster_info.keypair().clone();
-        let repair_peer_id = solana_sdk::pubkey::new_rand();
+        let repair_peer_id = sonoma_sdk::pubkey::new_rand();
 
         let slot = 50;
         let shred_index = 60;
@@ -1665,7 +1657,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let cluster_slots = ClusterSlots::default();
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me));
         let serve_repair = ServeRepair::new(cluster_info.clone(), bank_forks);
         let identity_keypair = cluster_info.keypair().clone();
@@ -1683,7 +1675,7 @@ mod tests {
 
         let serve_repair_addr = socketaddr!([127, 0, 0, 1], 1243);
         let nxt = ContactInfo {
-            id: solana_sdk::pubkey::new_rand(),
+            id: sonoma_sdk::pubkey::new_rand(),
             gossip: socketaddr!([127, 0, 0, 1], 1234),
             tvu: socketaddr!([127, 0, 0, 1], 1235),
             tvu_forwards: socketaddr!([127, 0, 0, 1], 1236),
@@ -1714,7 +1706,7 @@ mod tests {
 
         let serve_repair_addr2 = socketaddr!([127, 0, 0, 2], 1243);
         let nxt = ContactInfo {
-            id: solana_sdk::pubkey::new_rand(),
+            id: sonoma_sdk::pubkey::new_rand(),
             gossip: socketaddr!([127, 0, 0, 1], 1234),
             tvu: socketaddr!([127, 0, 0, 1], 1235),
             tvu_forwards: socketaddr!([127, 0, 0, 1], 1236),
@@ -1987,14 +1979,14 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let cluster_slots = ClusterSlots::default();
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me.clone()));
 
         // Insert two peers on the network
         let contact_info2 =
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+            ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         let contact_info3 =
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+            ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), timestamp());
         cluster_info.insert_info(contact_info2.clone());
         cluster_info.insert_info(contact_info3.clone());
         let identity_keypair = cluster_info.keypair().clone();
@@ -2004,7 +1996,7 @@ mod tests {
         // 1) repair validator set doesn't exist in gossip
         // 2) repair validator set only includes our own id
         // then no repairs should be generated
-        for pubkey in &[solana_sdk::pubkey::new_rand(), me.id] {
+        for pubkey in &[sonoma_sdk::pubkey::new_rand(), me.id] {
             let known_validators = Some(vec![*pubkey].into_iter().collect());
             assert!(serve_repair.repair_peers(&known_validators, 1).is_empty());
             assert!(serve_repair

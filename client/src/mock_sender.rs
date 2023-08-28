@@ -18,7 +18,7 @@ use {
     async_trait::async_trait,
     serde_json::{json, Number, Value},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_sdk::{
+    sonoma_sdk::{
         account::Account,
         clock::{Slot, UnixTimestamp},
         epoch_info::EpochInfo,

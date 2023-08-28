@@ -1,6 +1,6 @@
 use {
-    solana_program_test::{processor, ProgramTest},
-    solana_sdk::{
+    sonoma_program_test::{processor, ProgramTest},
+    sonoma_sdk::{
         account_info::{next_account_info, AccountInfo},
         entrypoint::{ProgramResult, MAX_PERMITTED_DATA_INCREASE},
         instruction::{AccountMeta, Instruction},

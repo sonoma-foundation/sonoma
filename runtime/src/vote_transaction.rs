@@ -1,5 +1,5 @@
 use {
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, UnixTimestamp},
         hash::Hash,
     },

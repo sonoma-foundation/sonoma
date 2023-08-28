@@ -11,7 +11,7 @@ use {
     log::*,
     serde_derive::{Deserialize, Serialize},
     solana_metrics::datapoint_info,
-    solana_sdk::{
+    sonoma_sdk::{
         hash::Hash,
         instruction::Instruction,
         message::Message,
@@ -203,7 +203,7 @@ impl Faucet {
                             )
                         );
                         let memo_instruction = Instruction {
-                            program_id: Pubkey::from(spl_memo::id().to_bytes()),
+                            program_id: Pubkey::new(&spl_memo::id().to_bytes()),
                             accounts: vec![],
                             data: memo.as_bytes().to_vec(),
                         };
@@ -493,7 +493,7 @@ impl LimitByTime for Pubkey {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, solana_sdk::system_instruction::SystemInstruction, std::time::Duration};
+    use {super::*, sonoma_sdk::system_instruction::SystemInstruction, std::time::Duration};
 
     #[test]
     fn test_check_time_request_limit() {
@@ -634,7 +634,7 @@ mod tests {
             assert_eq!(tx.signatures.len(), 1);
             assert_eq!(
                 message.account_keys,
-                vec![mint_pubkey, Pubkey::from(spl_memo::id().to_bytes())]
+                vec![mint_pubkey, Pubkey::new(&spl_memo::id().to_bytes())]
             );
             assert_eq!(message.recent_blockhash, blockhash);
 
@@ -650,7 +650,7 @@ mod tests {
 
     #[test]
     fn test_process_faucet_request() {
-        let to = solana_sdk::pubkey::new_rand();
+        let to = sonoma_sdk::pubkey::new_rand();
         let blockhash = Hash::new(to.as_ref());
         let lamports = 50;
         let req = FaucetRequest::GetAirdrop {

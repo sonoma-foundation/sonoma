@@ -1,7 +1,7 @@
 use {
     pkcs8::{der::Document, AlgorithmIdentifier, ObjectIdentifier},
     rcgen::{CertificateParams, DistinguishedName, DnType, SanType},
-    solana_sdk::{pubkey::Pubkey, signature::Keypair},
+    sonoma_sdk::{pubkey::Pubkey, signature::Keypair},
     std::{error::Error, net::IpAddr},
     x509_parser::{prelude::*, public_key::PublicKey},
 };
@@ -57,21 +57,21 @@ pub fn new_self_signed_tls_certificate_chain(
 }
 
 pub fn get_pubkey_from_tls_certificate(certificates: &[rustls::Certificate]) -> Option<Pubkey> {
-    if certificates.len() == 1 {
-        let der_cert = &certificates[0];
-        let (_, cert) = X509Certificate::from_der(der_cert.as_ref()).ok()?;
-        match cert.public_key().parsed().ok()? {
-            PublicKey::Unknown(key) => Pubkey::try_from(key).ok(),
-            _ => None,
-        }
-    } else {
-        None
-    }
+    certificates.first().and_then(|der_cert| {
+        X509Certificate::from_der(der_cert.as_ref())
+            .ok()
+            .and_then(|(_, cert)| {
+                cert.public_key().parsed().ok().and_then(|key| match key {
+                    PublicKey::Unknown(inner_key) => Some(Pubkey::new(inner_key)),
+                    _ => None,
+                })
+            })
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use {super::*, solana_sdk::signer::Signer, std::net::Ipv4Addr};
+    use {super::*, sonoma_sdk::signer::Signer, std::net::Ipv4Addr};
 
     #[test]
     fn test_generate_tls_certificate() {

@@ -1,6 +1,6 @@
 use {
     crate::prioritization_fee::{PrioritizationFeeDetails, PrioritizationFeeType},
-    solana_sdk::{
+    sonoma_sdk::{
         borsh::try_from_slice_unchecked,
         compute_budget::{self, ComputeBudgetInstruction},
         entrypoint::HEAP_LENGTH as MIN_HEAP_FRAME_BYTES,
@@ -67,12 +67,6 @@ pub struct ComputeBudget {
     pub curve25519_edwards_subtract_cost: u64,
     /// Number of compute units consumed to multiply a curve25519 edwards point
     pub curve25519_edwards_multiply_cost: u64,
-    /// Number of compute units consumed for a multiscalar multiplication (msm) of edwards points.
-    /// The total cost is calculated as `msm_base_cost + (length - 1) * msm_incremental_cost`.
-    pub curve25519_edwards_msm_base_cost: u64,
-    /// Number of compute units consumed for a multiscalar multiplication (msm) of edwards points.
-    /// The total cost is calculated as `msm_base_cost + (length - 1) * msm_incremental_cost`.
-    pub curve25519_edwards_msm_incremental_cost: u64,
     /// Number of compute units consumed to validate a curve25519 ristretto point
     pub curve25519_ristretto_validate_point_cost: u64,
     /// Number of compute units consumed to add two curve25519 ristretto points
@@ -81,12 +75,6 @@ pub struct ComputeBudget {
     pub curve25519_ristretto_subtract_cost: u64,
     /// Number of compute units consumed to multiply a curve25519 ristretto point
     pub curve25519_ristretto_multiply_cost: u64,
-    /// Number of compute units consumed for a multiscalar multiplication (msm) of ristretto points.
-    /// The total cost is calculated as `msm_base_cost + (length - 1) * msm_incremental_cost`.
-    pub curve25519_ristretto_msm_base_cost: u64,
-    /// Number of compute units consumed for a multiscalar multiplication (msm) of ristretto points.
-    /// The total cost is calculated as `msm_base_cost + (length - 1) * msm_incremental_cost`.
-    pub curve25519_ristretto_msm_incremental_cost: u64,
     /// Optional program heap region size, if `None` then loader default
     pub heap_size: Option<usize>,
     /// Number of compute units per additional 32k heap above the default (~.5
@@ -121,18 +109,14 @@ impl ComputeBudget {
             sysvar_base_cost: 100,
             secp256k1_recover_cost: 25_000,
             syscall_base_cost: 100,
-            curve25519_edwards_validate_point_cost: 159,
-            curve25519_edwards_add_cost: 473,
-            curve25519_edwards_subtract_cost: 475,
-            curve25519_edwards_multiply_cost: 2_177,
-            curve25519_edwards_msm_base_cost: 2_273,
-            curve25519_edwards_msm_incremental_cost: 758,
-            curve25519_ristretto_validate_point_cost: 169,
-            curve25519_ristretto_add_cost: 521,
-            curve25519_ristretto_subtract_cost: 519,
-            curve25519_ristretto_multiply_cost: 2_208,
-            curve25519_ristretto_msm_base_cost: 2303,
-            curve25519_ristretto_msm_incremental_cost: 788,
+            curve25519_edwards_validate_point_cost: 111,
+            curve25519_edwards_add_cost: 331,
+            curve25519_edwards_subtract_cost: 329,
+            curve25519_edwards_multiply_cost: 1_753,
+            curve25519_ristretto_validate_point_cost: 117,
+            curve25519_ristretto_add_cost: 367,
+            curve25519_ristretto_subtract_cost: 366,
+            curve25519_ristretto_multiply_cost: 1_804,
             heap_size: None,
             heap_cost: 8,
             mem_op_base_cost: 10,
@@ -144,7 +128,6 @@ impl ComputeBudget {
         instructions: impl Iterator<Item = (&'a Pubkey, &'a CompiledInstruction)>,
         default_units_per_instruction: bool,
         support_set_compute_unit_price_ix: bool,
-        enable_request_heap_frame_ix: bool,
     ) -> Result<PrioritizationFeeDetails, TransactionError> {
         let mut num_non_compute_budget_instructions: usize = 0;
         let mut updated_compute_unit_limit = None;
@@ -226,8 +209,7 @@ impl ComputeBudget {
         }
 
         if let Some((bytes, i)) = requested_heap_size {
-            if !enable_request_heap_frame_ix
-                || bytes > MAX_HEAP_FRAME_BYTES
+            if bytes > MAX_HEAP_FRAME_BYTES
                 || bytes < MIN_HEAP_FRAME_BYTES as u32
                 || bytes % 1024 != 0
             {
@@ -262,7 +244,7 @@ impl ComputeBudget {
 mod tests {
     use {
         super::*,
-        solana_sdk::{
+        sonoma_sdk::{
             hash::Hash,
             instruction::Instruction,
             message::Message,
@@ -285,7 +267,7 @@ mod tests {
     }
 
     macro_rules! test {
-        ( $instructions: expr, $expected_result: expr, $expected_budget: expr, $type_change: expr, $enable_request_heap_frame_ix: expr) => {
+        ( $instructions: expr, $expected_result: expr, $expected_budget: expr, $type_change: expr  ) => {
             let payer_keypair = Keypair::new();
             let tx = SanitizedTransaction::from_transaction_for_tests(Transaction::new(
                 &[&payer_keypair],
@@ -297,19 +279,12 @@ mod tests {
                 tx.message().program_instructions_iter(),
                 true,
                 $type_change,
-                $enable_request_heap_frame_ix,
             );
             assert_eq!($expected_result, result);
             assert_eq!(compute_budget, $expected_budget);
         };
         ( $instructions: expr, $expected_result: expr, $expected_budget: expr) => {
-            test!(
-                $instructions,
-                $expected_result,
-                $expected_budget,
-                true,
-                true
-            );
+            test!($instructions, $expected_result, $expected_budget, true);
         };
     }
 
@@ -383,8 +358,7 @@ mod tests {
                 compute_unit_limit: DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT as u64 * 3,
                 ..ComputeBudget::default()
             },
-            false,
-            true
+            false
         );
 
         // Prioritization fee
@@ -398,8 +372,7 @@ mod tests {
                 compute_unit_limit: 1,
                 ..ComputeBudget::default()
             },
-            false,
-            true
+            false
         );
 
         test!(
@@ -427,8 +400,7 @@ mod tests {
                 compute_unit_limit: 1,
                 ..ComputeBudget::default()
             },
-            false,
-            true
+            false
         );
 
         // HeapFrame
@@ -560,8 +532,7 @@ mod tests {
                 InstructionError::InvalidInstructionData,
             )),
             ComputeBudget::default(),
-            false,
-            true
+            false
         );
 
         test!(
@@ -597,8 +568,7 @@ mod tests {
                 heap_size: Some(MIN_HEAP_FRAME_BYTES as usize),
                 ..ComputeBudget::default()
             },
-            false,
-            true
+            false
         );
 
         // Duplicates
@@ -630,100 +600,6 @@ mod tests {
             ],
             Err(TransactionError::DuplicateInstruction(2)),
             ComputeBudget::default()
-        );
-    }
-
-    #[test]
-    fn test_process_instructions_disable_request_heap_frame() {
-        // assert empty message results default compute budget and fee
-        test!(
-            &[],
-            Ok(PrioritizationFeeDetails::default()),
-            ComputeBudget {
-                compute_unit_limit: 0,
-                ..ComputeBudget::default()
-            },
-            true,
-            false
-        );
-
-        // assert requesting heap frame when feature is disable will result instruction error
-        test!(
-            &[
-                ComputeBudgetInstruction::request_heap_frame(40 * 1024),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-            ],
-            Err(TransactionError::InstructionError(
-                0,
-                InstructionError::InvalidInstructionData
-            )),
-            ComputeBudget::default(),
-            true,
-            false
-        );
-        test!(
-            &[
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                ComputeBudgetInstruction::request_heap_frame(MAX_HEAP_FRAME_BYTES),
-            ],
-            Err(TransactionError::InstructionError(
-                1,
-                InstructionError::InvalidInstructionData,
-            )),
-            ComputeBudget::default(),
-            true,
-            false
-        );
-        test!(
-            &[
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                ComputeBudgetInstruction::request_heap_frame(MAX_HEAP_FRAME_BYTES),
-                ComputeBudgetInstruction::set_compute_unit_limit(MAX_COMPUTE_UNIT_LIMIT),
-                ComputeBudgetInstruction::set_compute_unit_price(u64::MAX),
-            ],
-            Err(TransactionError::InstructionError(
-                1,
-                InstructionError::InvalidInstructionData,
-            )),
-            ComputeBudget::default(),
-            true,
-            false
-        );
-        test!(
-            &[
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                ComputeBudgetInstruction::set_compute_unit_limit(1),
-                ComputeBudgetInstruction::request_heap_frame(MAX_HEAP_FRAME_BYTES),
-                ComputeBudgetInstruction::set_compute_unit_price(u64::MAX),
-            ],
-            Err(TransactionError::InstructionError(
-                2,
-                InstructionError::InvalidInstructionData,
-            )),
-            ComputeBudget::default(),
-            true,
-            false
-        );
-
-        // assert normal results when not requesting heap frame when the feature is disabled
-        test!(
-            &[
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-                Instruction::new_with_bincode(Pubkey::new_unique(), &0_u8, vec![]),
-            ],
-            Ok(PrioritizationFeeDetails::default()),
-            ComputeBudget {
-                compute_unit_limit: DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT as u64 * 7,
-                ..ComputeBudget::default()
-            },
-            true,
-            false
         );
     }
 }

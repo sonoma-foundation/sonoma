@@ -5,8 +5,8 @@ use {
         processor::process_instruction,
         state::{AddressLookupTable, LookupTableMeta},
     },
-    solana_program_test::*,
-    solana_sdk::{
+    sonoma_program_test::*,
+    sonoma_sdk::{
         account::AccountSharedData,
         clock::Slot,
         hash::Hash,

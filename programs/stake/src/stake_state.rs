@@ -5,18 +5,18 @@
 
 #[deprecated(
     since = "1.8.0",
-    note = "Please use `solana_sdk::stake::state` or `solana_program::stake::state` instead"
+    note = "Please use `sonoma_sdk::stake::state` or `sonoma_program::stake::state` instead"
 )]
-pub use solana_sdk::stake::state::*;
+pub use sonoma_sdk::stake::state::*;
 use {
-    solana_program_runtime::{ic_msg, invoke_context::InvokeContext},
-    solana_sdk::{
+    sonoma_program_runtime::{ic_msg, invoke_context::InvokeContext},
+    sonoma_sdk::{
         account::{AccountSharedData, ReadableAccount, WritableAccount},
         account_utils::StateMut,
         clock::{Clock, Epoch},
         feature_set::{
-            self, clean_up_delegation_errors, stake_allow_zero_undelegated_amount,
-            stake_merge_with_unmatched_credits_observed, stake_split_uses_rent_sysvar, FeatureSet,
+            self, stake_allow_zero_undelegated_amount, stake_merge_with_unmatched_credits_observed,
+            stake_split_uses_rent_sysvar, FeatureSet,
         },
         instruction::{checked_add, InstructionError},
         pubkey::Pubkey,
@@ -731,15 +731,6 @@ pub fn split(
                 } else {
                     // Otherwise, the new split stake should reflect the entire split
                     // requested, less any lamports needed to cover the split_rent_exempt_reserve.
-
-                    if invoke_context
-                        .feature_set
-                        .is_active(&clean_up_delegation_errors::id())
-                        && stake.delegation.stake.saturating_sub(lamports) < minimum_delegation
-                    {
-                        return Err(StakeError::InsufficientDelegation.into());
-                    }
-
                     (
                         lamports,
                         lamports.saturating_sub(
@@ -749,15 +740,6 @@ pub fn split(
                         ),
                     )
                 };
-
-            if invoke_context
-                .feature_set
-                .is_active(&clean_up_delegation_errors::id())
-                && split_stake_amount < minimum_delegation
-            {
-                return Err(StakeError::InsufficientDelegation.into());
-            }
-
             let split_stake = stake.split(remaining_stake_delta, split_stake_amount)?;
             let mut split_meta = meta;
             split_meta.rent_exempt_reserve = validated_split_info.destination_rent_exempt_reserve;
@@ -1305,12 +1287,7 @@ fn validate_split_amount(
     // account, the split amount must be at least the minimum stake delegation.  So if the minimum
     // stake delegation was 10 lamports, then a split amount of 1 lamport would not meet the
     // *delegation* requirements.
-    if !invoke_context
-        .feature_set
-        .is_active(&clean_up_delegation_errors::id())
-        && source_stake.is_some()
-        && lamports < additional_required_lamports
-    {
+    if source_stake.is_some() && lamports < additional_required_lamports {
         return Err(InstructionError::InsufficientFunds);
     }
 
@@ -1802,8 +1779,8 @@ mod tests {
     use {
         super::*,
         proptest::prelude::*,
-        solana_program_runtime::invoke_context::InvokeContext,
-        solana_sdk::{
+        sonoma_program_runtime::invoke_context::InvokeContext,
+        sonoma_sdk::{
             account::{create_account_shared_data_for_test, AccountSharedData},
             native_token,
             pubkey::Pubkey,
@@ -1814,7 +1791,7 @@ mod tests {
 
     #[test]
     fn test_authorized_authorize() {
-        let staker = solana_sdk::pubkey::new_rand();
+        let staker = sonoma_sdk::pubkey::new_rand();
         let mut authorized = Authorized::auto(&staker);
         let mut signers = HashSet::new();
         assert_eq!(
@@ -1830,9 +1807,9 @@ mod tests {
 
     #[test]
     fn test_authorized_authorize_with_custodian() {
-        let staker = solana_sdk::pubkey::new_rand();
-        let custodian = solana_sdk::pubkey::new_rand();
-        let invalid_custodian = solana_sdk::pubkey::new_rand();
+        let staker = sonoma_sdk::pubkey::new_rand();
+        let custodian = sonoma_sdk::pubkey::new_rand();
+        let invalid_custodian = sonoma_sdk::pubkey::new_rand();
         let mut authorized = Authorized::auto(&staker);
         let mut signers = HashSet::new();
         signers.insert(staker);
@@ -2953,7 +2930,7 @@ mod tests {
 
     #[test]
     fn test_lockup_is_expired() {
-        let custodian = solana_sdk::pubkey::new_rand();
+        let custodian = sonoma_sdk::pubkey::new_rand();
         let lockup = Lockup {
             epoch: 1,
             unix_timestamp: 1,
@@ -3014,7 +2991,7 @@ mod tests {
         panic!(
             "stake minimum_balance: {} lamports, {} SOL",
             minimum_balance,
-            minimum_balance as f64 / solana_sdk::native_token::LAMPORTS_PER_SOL as f64
+            minimum_balance as f64 / sonoma_sdk::native_token::LAMPORTS_PER_SOL as f64
         );
     }
 
@@ -3039,7 +3016,7 @@ mod tests {
             rent_exempt_reserve
         );
 
-        let even_larger_data = solana_sdk::system_instruction::MAX_PERMITTED_DATA_LENGTH;
+        let even_larger_data = sonoma_sdk::system_instruction::MAX_PERMITTED_DATA_LENGTH;
         let even_larger_rent_exempt_reserve = rent.minimum_balance(even_larger_data as usize);
         assert_eq!(
             calculate_split_rent_exempt_reserve(rent_exempt_reserve, data_len, even_larger_data),

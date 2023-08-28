@@ -1,11 +1,10 @@
-pub mod ctxt_ctxt_equality;
+pub mod close_account;
 pub mod pubkey_validity;
 pub mod transfer;
 pub mod transfer_with_fee;
 pub mod withdraw;
-pub mod zero_balance;
+pub mod withdraw_withheld;
 
-use num_derive::{FromPrimitive, ToPrimitive};
 #[cfg(not(target_os = "solana"))]
 use {
     crate::{
@@ -18,37 +17,14 @@ use {
     curve25519_dalek::scalar::Scalar,
 };
 pub use {
-    bytemuck::Pod,
-    ctxt_ctxt_equality::{
-        CiphertextCiphertextEqualityProofContext, CiphertextCiphertextEqualityProofData,
-    },
-    pubkey_validity::{PubkeyValidityData, PubkeyValidityProofContext},
-    transfer::{TransferData, TransferProofContext},
-    transfer_with_fee::{FeeParameters, TransferWithFeeData, TransferWithFeeProofContext},
-    withdraw::{WithdrawData, WithdrawProofContext},
-    zero_balance::{ZeroBalanceProofContext, ZeroBalanceProofData},
+    close_account::CloseAccountData, pubkey_validity::PubkeyValidityData, transfer::TransferData,
+    transfer_with_fee::TransferWithFeeData, withdraw::WithdrawData,
+    withdraw_withheld::WithdrawWithheldTokensData,
 };
 
-#[derive(Clone, Copy, Debug, FromPrimitive, ToPrimitive, PartialEq, Eq)]
-#[repr(u8)]
-pub enum ProofType {
-    /// Empty proof type used to distinguish if a proof context account is initialized
-    Uninitialized,
-    ZeroBalance,
-    Withdraw,
-    CiphertextCiphertextEquality,
-    Transfer,
-    TransferWithFee,
-    PubkeyValidity,
-}
-
-pub trait ZkProofData<T: Pod> {
-    const PROOF_TYPE: ProofType;
-
-    fn context_data(&self) -> &T;
-
-    #[cfg(not(target_os = "solana"))]
-    fn verify_proof(&self) -> Result<(), ProofError>;
+#[cfg(not(target_os = "solana"))]
+pub trait Verifiable {
+    fn verify(&self) -> Result<(), ProofError>;
 }
 
 #[cfg(not(target_os = "solana"))]

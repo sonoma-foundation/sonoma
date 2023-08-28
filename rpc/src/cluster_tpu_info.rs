@@ -1,7 +1,7 @@
 use {
     solana_gossip::cluster_info::ClusterInfo,
     solana_poh::poh_recorder::PohRecorder,
-    solana_sdk::{clock::NUM_CONSECUTIVE_LEADER_SLOTS, pubkey::Pubkey},
+    sonoma_sdk::{clock::NUM_CONSECUTIVE_LEADER_SLOTS, pubkey::Pubkey},
     solana_send_transaction_service::tpu_info::TpuInfo,
     std::{
         collections::HashMap,
@@ -59,7 +59,7 @@ impl TpuInfo for ClusterTpuInfo {
 mod test {
     use {
         super::*,
-        solana_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+        solana_gossip::contact_info::ContactInfo,
         solana_ledger::{
             blockstore::Blockstore, get_tmp_ledger_path, leader_schedule_cache::LeaderScheduleCache,
         },
@@ -69,7 +69,7 @@ mod test {
                 create_genesis_config_with_vote_accounts, GenesisConfigInfo, ValidatorVoteKeypairs,
             },
         },
-        solana_sdk::{
+        sonoma_sdk::{
             poh_config::PohConfig,
             signature::{Keypair, Signer},
             timing::timestamp,

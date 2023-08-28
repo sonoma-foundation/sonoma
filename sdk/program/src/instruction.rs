@@ -351,7 +351,7 @@ impl Instruction {
     /// # Examples
     ///
     /// ```
-    /// # use solana_program::{
+    /// # use sonoma_program::{
     /// #     pubkey::Pubkey,
     /// #     instruction::{AccountMeta, Instruction},
     /// # };
@@ -403,7 +403,7 @@ impl Instruction {
     /// # Examples
     ///
     /// ```
-    /// # use solana_program::{
+    /// # use sonoma_program::{
     /// #     pubkey::Pubkey,
     /// #     instruction::{AccountMeta, Instruction},
     /// # };
@@ -456,7 +456,7 @@ impl Instruction {
     /// # Examples
     ///
     /// ```
-    /// # use solana_program::{
+    /// # use sonoma_program::{
     /// #     pubkey::Pubkey,
     /// #     instruction::{AccountMeta, Instruction},
     /// # };
@@ -545,7 +545,7 @@ impl AccountMeta {
     /// # Examples
     ///
     /// ```
-    /// # use solana_program::{
+    /// # use sonoma_program::{
     /// #     pubkey::Pubkey,
     /// #     instruction::{AccountMeta, Instruction},
     /// # };
@@ -580,7 +580,7 @@ impl AccountMeta {
     /// # Examples
     ///
     /// ```
-    /// # use solana_program::{
+    /// # use sonoma_program::{
     /// #     pubkey::Pubkey,
     /// #     instruction::{AccountMeta, Instruction},
     /// # };

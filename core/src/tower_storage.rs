@@ -3,7 +3,7 @@ use {
         consensus::{Result, Tower, TowerError, TowerVersions},
         tower1_7_14::SavedTower1_7_14,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         pubkey::Pubkey,
         signature::{Signature, Signer},
     },
@@ -260,7 +260,7 @@ impl EtcdTowerStorage {
 
         Ok(Self {
             client: tokio::sync::Mutex::new(client),
-            instance_id: solana_sdk::timing::timestamp().to_le_bytes(),
+            instance_id: sonoma_sdk::timing::timestamp().to_le_bytes(),
             runtime,
         })
     }
@@ -374,7 +374,7 @@ pub mod test {
             consensus::Tower,
             tower1_7_14::{SavedTower1_7_14, Tower1_7_14},
         },
-        solana_sdk::{hash::Hash, signature::Keypair},
+        sonoma_sdk::{hash::Hash, signature::Keypair},
         solana_vote_program::vote_state::{
             BlockTimestamp, Lockout, Vote, VoteState, VoteTransaction, MAX_LOCKOUT_HISTORY,
         },
@@ -402,7 +402,7 @@ pub mod test {
             vote_state,
             last_vote: vote.clone(),
             last_timestamp: BlockTimestamp::default(),
-            last_vote_tx_blockhash: None,
+            last_vote_tx_blockhash: Hash::default(),
             stray_restored_slot: Some(2),
             last_switch_threshold_check: Option::default(),
         };

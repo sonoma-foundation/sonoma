@@ -5,12 +5,12 @@ use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
     solana_account_decoder::parse_token::spl_token_pubkey,
-    solana_clap_utils::input_parsers::pubkey_of,
+    sonoma_clap_utils::input_parsers::pubkey_of,
     solana_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
     solana_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
     solana_gossip::gossip_service::discover,
     solana_runtime::inline_spl_token,
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         instruction::{AccountMeta, Instruction},
         message::Message,
@@ -662,7 +662,7 @@ pub mod test {
             validator_configs::make_identical_validator_configs,
         },
         solana_measure::measure::Measure,
-        solana_sdk::{native_token::sol_to_lamports, poh_config::PohConfig},
+        sonoma_sdk::{native_token::sol_to_lamports, poh_config::PohConfig},
         solana_test_validator::TestValidator,
         spl_token::{
             solana_program::program_pack::Pack,

@@ -1,4 +1,4 @@
-//! The solana-program-test provides a BanksClient-based test framework BPF programs
+//! The sonoma-program-test provides a BanksClient-based test framework BPF programs
 #![allow(clippy::integer_arithmetic)]
 
 // Export tokio for test clients
@@ -10,7 +10,7 @@ use {
     solana_banks_client::start_client,
     solana_banks_server::banks_server::start_local_server,
     solana_bpf_loader_program::serialization::serialize_parameters,
-    solana_program_runtime::{
+    sonoma_program_runtime::{
         compute_budget::ComputeBudget, ic_msg, invoke_context::ProcessInstructionWithContext,
         stable_log, timings::ExecuteTimings,
     },
@@ -21,7 +21,7 @@ use {
         commitment::BlockCommitmentCache,
         genesis_utils::{create_genesis_config_with_leader_ex, GenesisConfigInfo},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::{Account, AccountSharedData, ReadableAccount},
         account_info::AccountInfo,
         clock::Slot,
@@ -60,7 +60,7 @@ use {
 // Export types so test clients can limit their solana crate dependencies
 pub use {
     solana_banks_client::{BanksClient, BanksClientError},
-    solana_program_runtime::invoke_context::InvokeContext,
+    sonoma_program_runtime::invoke_context::InvokeContext,
 };
 
 pub mod programs;
@@ -92,7 +92,7 @@ fn get_invoke_context<'a, 'b>() -> &'a mut InvokeContext<'b> {
 }
 
 pub fn builtin_process_instruction(
-    process_instruction: solana_sdk::entrypoint::ProcessInstruction,
+    process_instruction: sonoma_sdk::entrypoint::ProcessInstruction,
     _first_instruction_account: usize,
     invoke_context: &mut InvokeContext,
 ) -> Result<(), InstructionError> {
@@ -170,14 +170,14 @@ pub fn builtin_process_instruction(
     Ok(())
 }
 
-/// Converts a `solana-program`-style entrypoint into the runtime's entrypoint style, for
+/// Converts a `sonoma-program`-style entrypoint into the runtime's entrypoint style, for
 /// use with `ProgramTest::add_program`
 #[macro_export]
 macro_rules! processor {
     ($process_instruction:expr) => {
         Some(
             |first_instruction_account: usize,
-             invoke_context: &mut solana_program_test::InvokeContext| {
+             invoke_context: &mut sonoma_program_test::InvokeContext| {
                 $crate::builtin_process_instruction(
                     $process_instruction,
                     first_instruction_account,
@@ -214,7 +214,7 @@ fn get_sysvar<T: Default + Sysvar + Sized + serde::de::DeserializeOwned + Clone>
 }
 
 struct SyscallStubs {}
-impl solana_sdk::program_stubs::SyscallStubs for SyscallStubs {
+impl sonoma_sdk::program_stubs::SyscallStubs for SyscallStubs {
     fn sol_log(&self, message: &str) {
         let invoke_context = get_invoke_context();
         ic_msg!(invoke_context, "Program log: {}", message);
@@ -466,7 +466,7 @@ impl Default for ProgramTest {
             "solana_rbpf::vm=debug,\
              solana_runtime::message_processor=debug,\
              solana_runtime::system_instruction_processor=trace,\
-             solana_program_test=info",
+             sonoma_program_test=info",
         );
         let prefer_bpf =
             std::env::var("BPF_OUT_DIR").is_ok() || std::env::var("SBF_OUT_DIR").is_ok();
@@ -614,7 +614,7 @@ impl ProgramTest {
                 Account {
                     lamports: Rent::default().minimum_balance(data.len()).min(1),
                     data,
-                    owner: solana_sdk::bpf_loader::id(),
+                    owner: sonoma_sdk::bpf_loader::id(),
                     executable: true,
                     rent_epoch: 0,
                 },
@@ -727,7 +727,7 @@ impl ProgramTest {
             static ONCE: Once = Once::new();
 
             ONCE.call_once(|| {
-                solana_sdk::program_stubs::set_syscall_stubs(Box::new(SyscallStubs {}));
+                sonoma_sdk::program_stubs::set_syscall_stubs(Box::new(SyscallStubs {}));
             });
         }
 

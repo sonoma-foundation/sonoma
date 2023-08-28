@@ -4,7 +4,7 @@ use {
     log::*,
     regex::Regex,
     solana_download_utils::download_file,
-    solana_sdk::signature::{write_keypair_file, Keypair},
+    sonoma_sdk::signature::{write_keypair_file, Keypair},
     std::{
         borrow::Cow,
         collections::{HashMap, HashSet},

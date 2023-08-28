@@ -14,31 +14,18 @@ if ! command -v curl &> /dev/null; then
   exit 1
 fi
 
-# Archive name
+# Archive name and version
 archName="sonoma-cli-x86_64-unknown-linux-gnu.tar.bz2"
+version="1.14.12"
 
 # Creating a temporary directory
 tempDir="$(mktemp -d)"
 echo $temp_dir
 cd "$tempDir"
 
-# Downloading the Sonoma CLI Binary Archive
-# As long as the repository is private, you need to pass 
-# a token to download files from the repository
-if [ $# -eq 1 ]; then
-# Get token
-  token="$1"
-# Custom link to download the Sonoma CLI binary archive
-  sonomaURL="https://$token@raw.githubusercontent.com/convowork1/sonoma-mainnet/main/bin/$archName"
-  
-# Downloading the Sonoma CLI Binary
-  curl -LJO $sonomaURL
-else
-  echo "Invalid number of arguments. Please provide either a token"
-  exit 1
-fi
-
-# Unpacking the Sonoma CLI Binary
+# Downloading and unpacking the Sonoma CLI Binary Archive
+sonomaURL="https://github.com/convowork1/sonoma/releases/download/$version/$archName"
+curl -LJO $sonomaURL
 tar jxf sonoma-cli-x86_64-unknown-linux-gnu.tar.bz2
 
 # Defining the installation directory

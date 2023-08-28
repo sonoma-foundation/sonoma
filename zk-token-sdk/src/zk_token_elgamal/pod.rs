@@ -1,10 +1,5 @@
 pub use bytemuck::{Pod, Zeroable};
-use {
-    crate::zk_token_proof_instruction::ProofType,
-    num_traits::{FromPrimitive, ToPrimitive},
-    solana_program::instruction::InstructionError,
-    std::fmt,
-};
+use std::fmt;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Pod, Zeroable)]
 #[repr(transparent)]
@@ -31,22 +26,6 @@ impl From<u64> for PodU64 {
 impl From<PodU64> for u64 {
     fn from(pod: PodU64) -> Self {
         Self::from_le_bytes(pod.0)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Pod, Zeroable)]
-#[repr(transparent)]
-pub struct PodProofType(u8);
-impl From<ProofType> for PodProofType {
-    fn from(proof_type: ProofType) -> Self {
-        Self(ToPrimitive::to_u8(&proof_type).unwrap())
-    }
-}
-impl TryFrom<PodProofType> for ProofType {
-    type Error = InstructionError;
-
-    fn try_from(pod: PodProofType) -> Result<Self, Self::Error> {
-        FromPrimitive::from_u8(pod.0).ok_or(Self::Error::InvalidAccountData)
     }
 }
 
@@ -112,25 +91,25 @@ impl fmt::Debug for DecryptHandle {
     }
 }
 
-/// Serialization of `CiphertextCommitmentEqualityProof`
+/// Serialization of `CtxtCommEqualityProof`
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct CiphertextCommitmentEqualityProof(pub [u8; 192]);
+pub struct CtxtCommEqualityProof(pub [u8; 192]);
 
-// `CiphertextCommitmentEqualityProof` is a Pod and Zeroable.
+// `CtxtCommEqualityProof` is a Pod and Zeroable.
 // Add the marker traits manually because `bytemuck` only adds them for some `u8` arrays
-unsafe impl Zeroable for CiphertextCommitmentEqualityProof {}
-unsafe impl Pod for CiphertextCommitmentEqualityProof {}
+unsafe impl Zeroable for CtxtCommEqualityProof {}
+unsafe impl Pod for CtxtCommEqualityProof {}
 
 /// Serialization of `CtxtCtxtEqualityProof`
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct CiphertextCiphertextEqualityProof(pub [u8; 224]);
+pub struct CtxtCtxtEqualityProof(pub [u8; 224]);
 
 // `CtxtCtxtEqualityProof` is a Pod and Zeroable.
 // Add the marker traits manually because `bytemuck` only adds them for some `u8` arrays
-unsafe impl Zeroable for CiphertextCiphertextEqualityProof {}
-unsafe impl Pod for CiphertextCiphertextEqualityProof {}
+unsafe impl Zeroable for CtxtCtxtEqualityProof {}
+unsafe impl Pod for CtxtCtxtEqualityProof {}
 
 /// Serialization of validity proofs
 #[derive(Clone, Copy)]
@@ -170,7 +149,7 @@ pub struct FeeSigmaProof(pub [u8; 256]);
 /// Serialization of public-key sigma proof
 #[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(transparent)]
-pub struct PubkeyValidityProof(pub [u8; 64]);
+pub struct PubkeySigmaProof(pub [u8; 64]);
 
 /// Serialization of range proofs for 64-bit numbers (for `Withdraw` instruction)
 #[derive(Clone, Copy)]

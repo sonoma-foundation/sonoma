@@ -1,12 +1,7 @@
 ---
 title: Terminology
-description: "Learn the essential terminology used throughout the Solana blockchain and development models."
-keywords:
-  - terms
-  - dictionary
-  - definitions
-  - define
-  - programming models
+description: "Learn the essential terminology used thoughtout the Solana blockchain and development models."
+keywords: "terms, dictionary, definitions, define, programming models"
 ---
 
 The following terms are used throughout the Solana documentation and development ecosystem.

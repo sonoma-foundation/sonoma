@@ -15,7 +15,7 @@ use {
     },
     solana_measure::{measure, measure::Measure},
     solana_metrics::{datapoint_error, inc_new_counter_debug},
-    solana_program_runtime::timings::{ExecuteTimingType, ExecuteTimings, ThreadExecuteTimings},
+    sonoma_program_runtime::timings::{ExecuteTimingType, ExecuteTimings, ThreadExecuteTimings},
     solana_rayon_threadlimit::{get_max_thread_count, get_thread_count},
     solana_runtime::{
         accounts_background_service::AbsRequestSender,
@@ -37,7 +37,7 @@ use {
         vote_account::VoteAccountsHashMap,
         vote_sender_types::ReplayVoteSender,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, MAX_PROCESSING_AGE},
         feature_set,
         genesis_config::GenesisConfig,
@@ -62,6 +62,35 @@ use {
     },
     thiserror::Error,
 };
+
+// it tracks the block cost available capacity - number of compute-units allowed
+// by max block cost limit.
+#[derive(Debug)]
+pub struct BlockCostCapacityMeter {
+    pub capacity: u64,
+    pub accumulated_cost: u64,
+}
+
+impl Default for BlockCostCapacityMeter {
+    fn default() -> Self {
+        BlockCostCapacityMeter::new(MAX_BLOCK_UNITS)
+    }
+}
+
+impl BlockCostCapacityMeter {
+    pub fn new(capacity_limit: u64) -> Self {
+        Self {
+            capacity: capacity_limit,
+            accumulated_cost: 0_u64,
+        }
+    }
+
+    // return the remaining capacity
+    pub fn accumulate(&mut self, cost: u64) -> u64 {
+        self.accumulated_cost += cost;
+        self.capacity.saturating_sub(self.accumulated_cost)
+    }
+}
 
 struct TransactionBatchWithIndexes<'a, 'b> {
     pub batch: TransactionBatch<'a, 'b>,
@@ -123,12 +152,27 @@ fn get_first_error(
     first_err
 }
 
+fn aggregate_total_execution_units(execute_timings: &ExecuteTimings) -> u64 {
+    let mut execute_cost_units: u64 = 0;
+    for (program_id, timing) in &execute_timings.details.per_program_timings {
+        if timing.count < 1 {
+            continue;
+        }
+        execute_cost_units =
+            execute_cost_units.saturating_add(timing.accumulated_units / timing.count as u64);
+        trace!("aggregated execution cost of {:?} {:?}", program_id, timing);
+    }
+    execute_cost_units
+}
+
 fn execute_batch(
     batch: &TransactionBatchWithIndexes,
     bank: &Arc<Bank>,
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     timings: &mut ExecuteTimings,
+    cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
+    tx_cost: u64,
     log_messages_bytes_limit: Option<usize>,
 ) -> Result<()> {
     let TransactionBatchWithIndexes {
@@ -145,6 +189,8 @@ fn execute_batch(
         vec![]
     };
 
+    let pre_process_units: u64 = aggregate_total_execution_units(timings);
+
     let (tx_results, balances) = batch.bank().load_execute_and_commit_transactions(
         batch,
         MAX_PROCESSING_AGE,
@@ -155,6 +201,30 @@ fn execute_batch(
         timings,
         log_messages_bytes_limit,
     );
+
+    if bank
+        .feature_set
+        .is_active(&feature_set::gate_large_block::id())
+    {
+        let execution_cost_units = aggregate_total_execution_units(timings) - pre_process_units;
+        let remaining_block_cost_cap = cost_capacity_meter
+            .write()
+            .unwrap()
+            .accumulate(execution_cost_units + tx_cost);
+
+        debug!(
+            "bank {} executed a batch, number of transactions {}, total execute cu {}, total additional cu {}, remaining block cost cap {}",
+            bank.slot(),
+            batch.sanitized_transactions().len(),
+            execution_cost_units,
+            tx_cost,
+            remaining_block_cost_cap,
+        );
+
+        if remaining_block_cost_cap == 0_u64 {
+            return Err(TransactionError::WouldExceedMaxBlockCostLimit);
+        }
+    }
 
     bank_utils::find_and_send_votes(
         batch.sanitized_transactions(),
@@ -210,6 +280,8 @@ fn execute_batches_internal(
     entry_callback: Option<&ProcessCallback>,
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
+    cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
+    tx_costs: &[u64],
     log_messages_bytes_limit: Option<usize>,
 ) -> Result<ExecuteBatchesInternalMetrics> {
     inc_new_counter_debug!("bank-par_execute_entries-count", batches.len());
@@ -220,18 +292,23 @@ fn execute_batches_internal(
     let results: Vec<Result<()>> = PAR_THREAD_POOL.install(|| {
         batches
             .into_par_iter()
-            .map(|transaction_batch| {
-                let transaction_count =
-                    transaction_batch.batch.sanitized_transactions().len() as u64;
+            .enumerate()
+            .map(|(index, transaction_batch_with_indexes)| {
+                let transaction_count = transaction_batch_with_indexes
+                    .batch
+                    .sanitized_transactions()
+                    .len() as u64;
                 let mut timings = ExecuteTimings::default();
                 let (result, execute_batches_time): (Result<()>, Measure) = measure!(
                     {
                         let result = execute_batch(
-                            transaction_batch,
+                            transaction_batch_with_indexes,
                             bank,
                             transaction_status_sender,
                             replay_vote_sender,
                             &mut timings,
+                            cost_capacity_meter.clone(),
+                            tx_costs[index],
                             log_messages_bytes_limit,
                         );
                         if let Some(entry_callback) = entry_callback {
@@ -306,6 +383,7 @@ fn execute_batches(
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     confirmation_timing: &mut ConfirmationTiming,
+    cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
     cost_model: &CostModel,
     log_messages_bytes_limit: Option<usize>,
 ) -> Result<()> {
@@ -345,6 +423,7 @@ fn execute_batches(
     let target_batch_count = get_thread_count() as u64;
 
     let mut tx_batches: Vec<TransactionBatchWithIndexes> = vec![];
+    let mut tx_batch_costs: Vec<u64> = vec![];
     let rebatched_txs = if total_cost > target_batch_count.saturating_mul(minimal_tx_cost) {
         let target_batch_cost = total_cost / target_batch_count;
         let mut batch_cost: u64 = 0;
@@ -368,12 +447,18 @@ fn execute_batches(
                     );
                     slice_start = next_index;
                     tx_batches.push(tx_batch);
+                    tx_batch_costs.push(batch_cost_without_bpf);
                     batch_cost = 0;
                     batch_cost_without_bpf = 0;
                 }
             });
         &tx_batches[..]
     } else {
+        match batches.len() {
+            // Ensure that the total cost attributed to this batch is essentially correct
+            0 => tx_batch_costs = Vec::new(),
+            n => tx_batch_costs = vec![total_cost_without_bpf / (n as u64); n],
+        }
         batches
     };
 
@@ -383,6 +468,8 @@ fn execute_batches(
         entry_callback,
         transaction_status_sender,
         replay_vote_sender,
+        cost_capacity_meter,
+        &tx_batch_costs,
         log_messages_bytes_limit,
     )?;
 
@@ -438,6 +525,7 @@ pub fn process_entries_for_tests(
         transaction_status_sender,
         replay_vote_sender,
         &mut confirmation_timing,
+        Arc::new(RwLock::new(BlockCostCapacityMeter::default())),
         None,
         &_ignored_prioritization_fee_cache,
     );
@@ -456,6 +544,7 @@ fn process_entries_with_callback(
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     confirmation_timing: &mut ConfirmationTiming,
+    cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
     log_messages_bytes_limit: Option<usize>,
     prioritization_fee_cache: &PrioritizationFeeCache,
 ) -> Result<()> {
@@ -484,6 +573,7 @@ fn process_entries_with_callback(
                         transaction_status_sender,
                         replay_vote_sender,
                         confirmation_timing,
+                        cost_capacity_meter.clone(),
                         &cost_model,
                         log_messages_bytes_limit,
                     )?;
@@ -552,6 +642,7 @@ fn process_entries_with_callback(
                             transaction_status_sender,
                             replay_vote_sender,
                             confirmation_timing,
+                            cost_capacity_meter.clone(),
                             &cost_model,
                             log_messages_bytes_limit,
                         )?;
@@ -568,6 +659,7 @@ fn process_entries_with_callback(
         transaction_status_sender,
         replay_vote_sender,
         confirmation_timing,
+        cost_capacity_meter,
         &cost_model,
         log_messages_bytes_limit,
     )?;
@@ -1122,6 +1214,7 @@ fn confirm_slot_entries(
             assert!(entries.is_some());
 
             let mut replay_elapsed = Measure::start("replay_elapsed");
+            let cost_capacity_meter = Arc::new(RwLock::new(BlockCostCapacityMeter::default()));
             let mut replay_entries: Vec<_> = entries
                 .unwrap()
                 .into_iter()
@@ -1140,6 +1233,7 @@ fn confirm_slot_entries(
                 transaction_status_sender,
                 replay_vote_sender,
                 timing,
+                cost_capacity_meter,
                 log_messages_bytes_limit,
                 prioritization_fee_cache,
             )
@@ -1769,7 +1863,7 @@ pub mod tests {
         matches::assert_matches,
         rand::{thread_rng, Rng},
         solana_entry::entry::{create_ticks, next_entry, next_entry_mut},
-        solana_program_runtime::{
+        sonoma_program_runtime::{
             accounts_data_meter::MAX_ACCOUNTS_DATA_LEN, invoke_context::InvokeContext,
         },
         solana_runtime::{
@@ -1778,7 +1872,7 @@ pub mod tests {
             },
             vote_account::VoteAccount,
         },
-        solana_sdk::{
+        sonoma_sdk::{
             account::{AccountSharedData, WritableAccount},
             epoch_schedule::EpochSchedule,
             hash::Hash,
@@ -2513,7 +2607,7 @@ pub mod tests {
     #[test]
     fn test_process_ledger_simple() {
         solana_logger::setup();
-        let leader_pubkey = solana_sdk::pubkey::new_rand();
+        let leader_pubkey = sonoma_sdk::pubkey::new_rand();
         let mint = 100;
         let hashes_per_tick = 10;
         let GenesisConfigInfo {
@@ -3080,7 +3174,7 @@ pub mod tests {
                     bank.last_blockhash(),
                     1,
                     0,
-                    &solana_sdk::pubkey::new_rand(),
+                    &sonoma_sdk::pubkey::new_rand(),
                 ));
 
                 next_entry_mut(&mut hash, 0, transactions)
@@ -3241,7 +3335,7 @@ pub mod tests {
             ..
         } = create_genesis_config(11_000);
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         bank.transfer(1_000, &mint_keypair, &pubkey).unwrap();
         assert_eq!(bank.transaction_count(), 1);
         assert_eq!(bank.get_balance(&pubkey), 1_000);
@@ -3499,7 +3593,7 @@ pub mod tests {
                             bank.last_blockhash(),
                             100,
                             100,
-                            &solana_sdk::pubkey::new_rand(),
+                            &sonoma_sdk::pubkey::new_rand(),
                         ));
                         transactions
                     })
@@ -3645,14 +3739,14 @@ pub mod tests {
         // Create array of two transactions which throw different errors
         let account_not_found_tx = system_transaction::transfer(
             &keypair,
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             42,
             bank.last_blockhash(),
         );
         let account_not_found_sig = account_not_found_tx.signatures[0];
         let invalid_blockhash_tx = system_transaction::transfer(
             &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             42,
             Hash::default(),
         );
@@ -3697,7 +3791,7 @@ pub mod tests {
 
         let bank1 = Arc::new(Bank::new_from_parent(
             &bank0,
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             1,
         ));
 
@@ -3707,15 +3801,13 @@ pub mod tests {
         // Create an transaction that references the new blockhash, should still
         // be able to find the blockhash if we process transactions all in the same
         // batch
-        let mut expected_successful_voter_pubkeys = BTreeSet::new();
+        let mut expected_signatures = BTreeSet::new();
         let vote_txs: Vec<_> = validator_keypairs
             .iter()
             .enumerate()
             .map(|(i, validator_keypairs)| {
-                if i % 3 == 0 {
+                let vote_tx = if i % 3 == 0 {
                     // These votes are correct
-                    expected_successful_voter_pubkeys
-                        .insert(validator_keypairs.vote_keypair.pubkey());
                     vote_transaction::new_vote_transaction(
                         vec![0],
                         bank0.hash(),
@@ -3747,18 +3839,20 @@ pub mod tests {
                         &validator_keypairs.vote_keypair,
                         None,
                     )
-                }
+                };
+                expected_signatures.insert(vote_tx.signatures[0]);
+                vote_tx
             })
             .collect();
         let entry = next_entry(&bank_1_blockhash, 1, vote_txs);
         let (replay_vote_sender, replay_vote_receiver) = crossbeam_channel::unbounded();
         let _ =
             process_entries_for_tests(&bank1, vec![entry], true, None, Some(&replay_vote_sender));
-        let successes: BTreeSet<Pubkey> = replay_vote_receiver
+        let signatures: BTreeSet<_> = replay_vote_receiver
             .try_iter()
-            .map(|(vote_pubkey, ..)| vote_pubkey)
+            .map(|(.., signature)| signature)
             .collect();
-        assert_eq!(successes, expected_successful_voter_pubkeys);
+        assert_eq!(signatures, expected_signatures);
     }
 
     fn make_slot_with_vote_tx(
@@ -3997,7 +4091,7 @@ pub mod tests {
                     let versioned = VoteStateVersions::new_current(vote_state);
                     VoteState::serialize(&versioned, vote_account.data_as_mut_slice()).unwrap();
                     (
-                        solana_sdk::pubkey::new_rand(),
+                        sonoma_sdk::pubkey::new_rand(),
                         (stake, VoteAccount::try_from(vote_account).unwrap()),
                     )
                 })
@@ -4260,7 +4354,7 @@ pub mod tests {
 
     #[test]
     fn test_rebatch_transactions() {
-        let dummy_leader_pubkey = solana_sdk::pubkey::new_rand();
+        let dummy_leader_pubkey = sonoma_sdk::pubkey::new_rand();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -4268,11 +4362,11 @@ pub mod tests {
         } = create_genesis_config_with_leader(500, &dummy_leader_pubkey, 100);
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         let keypair2 = Keypair::new();
-        let pubkey2 = solana_sdk::pubkey::new_rand();
+        let pubkey2 = sonoma_sdk::pubkey::new_rand();
         let keypair3 = Keypair::new();
-        let pubkey3 = solana_sdk::pubkey::new_rand();
+        let pubkey3 = sonoma_sdk::pubkey::new_rand();
 
         let txs = vec![
             SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
@@ -4469,7 +4563,7 @@ pub mod tests {
                 bank.last_blockhash(),
                 LAMPORTS_PER_SOL,
                 ACCOUNT_SIZE,
-                &solana_sdk::system_program::id(),
+                &sonoma_sdk::system_program::id(),
             );
             let entry = next_entry(&bank.last_blockhash(), 1, vec![transaction]);
             assert_eq!(
@@ -4484,7 +4578,7 @@ pub mod tests {
             bank.last_blockhash(),
             LAMPORTS_PER_SOL,
             ACCOUNT_SIZE,
-            &solana_sdk::system_program::id(),
+            &sonoma_sdk::system_program::id(),
         );
         let entry = next_entry(&bank.last_blockhash(), 1, vec![transaction]);
         assert_eq!(
@@ -4581,7 +4675,7 @@ pub mod tests {
             bank.last_blockhash(),
             ACCOUNT_BALANCE,
             ACCOUNT_SIZE,
-            &solana_sdk::system_program::id(),
+            &sonoma_sdk::system_program::id(),
         );
         let entry = next_entry(&bank.last_blockhash(), 1, vec![transaction]);
         assert!(matches!(
@@ -4629,8 +4723,8 @@ pub mod tests {
             mock_realloc_program_id: Pubkey,
             recent_blockhash: Hash,
         ) -> Transaction {
-            let account_metas = vec![solana_sdk::instruction::AccountMeta::new(*reallocd, false)];
-            let instruction = solana_sdk::instruction::Instruction::new_with_bincode(
+            let account_metas = vec![sonoma_sdk::instruction::AccountMeta::new(*reallocd, false)];
+            let instruction = sonoma_sdk::instruction::Instruction::new_with_bincode(
                 mock_realloc_program_id,
                 &Instruction::Realloc { new_size },
                 account_metas,

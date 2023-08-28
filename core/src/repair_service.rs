@@ -17,7 +17,7 @@ use {
     solana_ledger::blockstore::{Blockstore, SlotMeta},
     solana_measure::measure::Measure,
     solana_runtime::{bank_forks::BankForks, contains::Contains},
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot, epoch_schedule::EpochSchedule, hash::Hash, pubkey::Pubkey,
         signer::keypair::Keypair,
     },
@@ -35,7 +35,7 @@ use {
     },
 };
 #[cfg(test)]
-use {solana_ledger::shred::Nonce, solana_sdk::timing::timestamp};
+use {solana_ledger::shred::Nonce, sonoma_sdk::timing::timestamp};
 
 pub type DuplicateSlotsResetSender = CrossbeamSender<Vec<(Slot, Hash)>>;
 pub type DuplicateSlotsResetReceiver = CrossbeamReceiver<Vec<(Slot, Hash)>>;
@@ -727,9 +727,7 @@ impl RepairService {
 mod test {
     use {
         super::*,
-        solana_gossip::{
-            cluster_info::Node, legacy_contact_info::LegacyContactInfo as ContactInfo,
-        },
+        solana_gossip::{cluster_info::Node, contact_info::ContactInfo},
         solana_ledger::{
             blockstore::{
                 make_chaining_slot_entries, make_many_slot_entries, make_slot_entries, Blockstore,
@@ -739,7 +737,7 @@ mod test {
             shred::max_ticks_per_n_shreds,
         },
         solana_runtime::bank::Bank,
-        solana_sdk::signature::Keypair,
+        sonoma_sdk::signature::Keypair,
         solana_streamer::socket::SocketAddrSpace,
         std::collections::HashSet,
     };

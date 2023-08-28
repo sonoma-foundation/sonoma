@@ -22,7 +22,7 @@ use {
         validator_configs::*,
     },
     solana_runtime::snapshot_config::SnapshotConfig,
-    solana_sdk::{
+    sonoma_sdk::{
         account::AccountSharedData,
         clock::{self, Slot, DEFAULT_MS_PER_SLOT, DEFAULT_TICKS_PER_SLOT},
         hash::Hash,

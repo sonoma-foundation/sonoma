@@ -1,13 +1,13 @@
 //! The `gossip_service` module implements the network control plane.
 
 use {
-    crate::{cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo},
+    crate::{cluster_info::ClusterInfo, contact_info::ContactInfo},
     crossbeam_channel::{unbounded, Sender},
     rand::{thread_rng, Rng},
     solana_client::{connection_cache::ConnectionCache, thin_client::ThinClient},
     solana_perf::recycler::Recycler,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    sonoma_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
     },
@@ -364,8 +364,8 @@ mod tests {
     fn test_gossip_services_spy() {
         const TIMEOUT: Duration = Duration::from_secs(5);
         let keypair = Keypair::new();
-        let peer0 = solana_sdk::pubkey::new_rand();
-        let peer1 = solana_sdk::pubkey::new_rand();
+        let peer0 = sonoma_sdk::pubkey::new_rand();
+        let peer1 = sonoma_sdk::pubkey::new_rand();
         let contact_info = ContactInfo::new_localhost(&keypair.pubkey(), 0);
         let peer0_info = ContactInfo::new_localhost(&peer0, 0);
         let peer1_info = ContactInfo::new_localhost(&peer1, 0);
@@ -397,7 +397,7 @@ mod tests {
             spy_ref.clone(),
             None,
             TIMEOUT,
-            Some(solana_sdk::pubkey::new_rand()),
+            Some(sonoma_sdk::pubkey::new_rand()),
             None,
         );
         assert!(!met_criteria);
@@ -411,7 +411,7 @@ mod tests {
             spy_ref.clone(),
             Some(1),
             TIMEOUT,
-            Some(solana_sdk::pubkey::new_rand()),
+            Some(sonoma_sdk::pubkey::new_rand()),
             None,
         );
         assert!(!met_criteria);

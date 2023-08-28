@@ -3,8 +3,8 @@
 extern crate test;
 
 use {
-    solana_program_runtime::invoke_context::InvokeContext,
-    solana_sdk::{
+    sonoma_program_runtime::invoke_context::InvokeContext,
+    sonoma_sdk::{
         account::{create_account_for_test, Account, AccountSharedData},
         clock::{Clock, Slot},
         hash::Hash,

@@ -1,9 +1,9 @@
-pub use solana_program::pubkey::*;
+pub use sonoma_program::pubkey::*;
 
 /// New random Pubkey for tests and benchmarks.
 #[cfg(feature = "full")]
 pub fn new_rand() -> Pubkey {
-    Pubkey::from(rand::random::<[u8; PUBKEY_BYTES]>())
+    Pubkey::new(&rand::random::<[u8; PUBKEY_BYTES]>())
 }
 
 #[cfg(feature = "full")]
@@ -38,7 +38,7 @@ mod tests {
     #[test]
     fn test_read_write_pubkey() -> Result<(), Box<dyn std::error::Error>> {
         let filename = "test_pubkey.json";
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         write_pubkey_file(filename, pubkey)?;
         let read = read_pubkey_file(filename)?;
         assert_eq!(read, pubkey);

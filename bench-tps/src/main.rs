@@ -16,7 +16,7 @@ use {
     },
     solana_genesis::Base64Account,
     solana_gossip::gossip_service::{discover_cluster, get_client, get_multi_client},
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig, fee_calculator::FeeRateGovernor, system_program,
     },
     solana_streamer::socket::SocketAddrSpace,

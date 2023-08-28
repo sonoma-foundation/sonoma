@@ -16,7 +16,7 @@ use {
         },
         sorted_storages::SortedStorages,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, SLOT_MS},
         hash::Hash,
         pubkey::Pubkey,
@@ -202,7 +202,7 @@ impl AccountsHashVerifier {
     fn generate_fault_hash(original_hash: &Hash) -> Hash {
         use {
             rand::{thread_rng, Rng},
-            solana_sdk::hash::extend_and_hash,
+            sonoma_sdk::hash::extend_and_hash,
         };
 
         let rand = thread_rng().gen_range(0, 10);
@@ -334,15 +334,12 @@ impl AccountsHashVerifier {
 mod tests {
     use {
         super::*,
-        solana_gossip::{
-            cluster_info::make_accounts_hashes_message,
-            legacy_contact_info::LegacyContactInfo as ContactInfo,
-        },
+        solana_gossip::{cluster_info::make_accounts_hashes_message, contact_info::ContactInfo},
         solana_runtime::{
             rent_collector::RentCollector,
             snapshot_utils::{ArchiveFormat, SnapshotVersion},
         },
-        solana_sdk::{
+        sonoma_sdk::{
             genesis_config::ClusterType,
             hash::hash,
             signature::{Keypair, Signer},

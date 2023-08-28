@@ -67,9 +67,8 @@ impl Keypair {
 }
 
 impl Signer for Keypair {
-    #[inline]
     fn pubkey(&self) -> Pubkey {
-        Pubkey::from(self.0.public.to_bytes())
+        Pubkey::new(self.0.public.as_ref())
     }
 
     fn try_pubkey(&self) -> Result<Pubkey, SignerError> {

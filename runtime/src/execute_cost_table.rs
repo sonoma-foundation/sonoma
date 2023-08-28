@@ -4,8 +4,8 @@
 /// When its capacity limit is reached, it prunes old and less-used programs
 /// to make room for new ones.
 use {
-    log::*, solana_program_runtime::compute_budget::DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT,
-    solana_sdk::pubkey::Pubkey, std::collections::HashMap,
+    log::*, sonoma_program_runtime::compute_budget::DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT,
+    sonoma_sdk::pubkey::Pubkey, std::collections::HashMap,
 };
 
 // prune is rather expensive op, free up bulk space in each operation

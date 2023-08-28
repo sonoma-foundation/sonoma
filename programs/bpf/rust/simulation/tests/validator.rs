@@ -1,18 +1,18 @@
 #![cfg(feature = "test-bpf")]
 
 use {
-    solana_program::{
+    sonoma_program::{
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
         sysvar,
     },
-    solana_sdk::{signature::Signer, transaction::Transaction},
+    sonoma_sdk::{signature::Signer, transaction::Transaction},
     solana_validator::test_validator::*,
 };
 
 #[test]
 fn no_panic() {
-    solana_logger::setup_with_default("solana_program_runtime=debug");
+    solana_logger::setup_with_default("sonoma_program_runtime=debug");
     let program_id = Pubkey::new_unique();
 
     let (test_validator, payer) = TestValidatorGenesis::default()

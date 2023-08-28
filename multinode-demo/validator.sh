@@ -11,14 +11,13 @@ args=(
   --no-poh-speed-test
   --no-os-network-limits-test
 )
-airdrops_enabled=0
+airdrops_enabled=1
 node_sol=500 # 500 SOL: number of SOL to airdrop the node for transaction fees and vote account rent exemption (ignored if airdrops_enabled=0)
 label=
 identity=
 vote_account=
 no_restart=0
 gossip_entrypoint=
-entrypoint_hostname=3.74.241.65
 ledger_dir=
 maybe_allow_private_addr=
 
@@ -303,7 +302,7 @@ trap 'kill_node_and_exit' INT TERM ERR
 wallet() {
   (
     set -x
-    $solana_cli --keypair "$identity" --url "$rpc_url" "$@"
+    $sonoma_cli --keypair "$identity" --url "$rpc_url" "$@"
   )
 }
 
@@ -319,7 +318,7 @@ setup_validator_accounts() {
       echo "Adding $node_sol to validator identity account:"
       (
         set -x
-        $solana_cli \
+        $sonoma_cli \
           --keypair "$SOLANA_CONFIG_DIR/faucet.json" --url "$rpc_url" \
           transfer --allow-unfunded-recipient "$identity" "$node_sol"
       ) || return $?
@@ -339,9 +338,9 @@ setup_validator_accounts() {
 # shellcheck disable=SC2086 # Don't want to double quote "$maybe_allow_private_addr"
 rpc_url=$($solana_gossip $maybe_allow_private_addr rpc-url --timeout 180 --entrypoint "$gossip_entrypoint")
 
-[[ -r "$identity" ]] || $solana_keygen new --no-passphrase -so "$identity"
-[[ -r "$vote_account" ]] || $solana_keygen new --no-passphrase -so "$vote_account"
-[[ -r "$authorized_withdrawer" ]] || $solana_keygen new --no-passphrase -so "$authorized_withdrawer"
+[[ -r "$identity" ]] || $sonoma_keygen new --no-passphrase -so "$identity"
+[[ -r "$vote_account" ]] || $sonoma_keygen new --no-passphrase -so "$vote_account"
+[[ -r "$authorized_withdrawer" ]] || $sonoma_keygen new --no-passphrase -so "$authorized_withdrawer"
 
 setup_validator_accounts "$node_sol"
 

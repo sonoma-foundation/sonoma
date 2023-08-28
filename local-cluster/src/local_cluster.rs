@@ -18,8 +18,7 @@ use {
         validator::{Validator, ValidatorConfig, ValidatorStartProgress},
     },
     solana_gossip::{
-        cluster_info::Node, gossip_service::discover_cluster,
-        legacy_contact_info::LegacyContactInfo as ContactInfo,
+        cluster_info::Node, contact_info::ContactInfo, gossip_service::discover_cluster,
     },
     solana_ledger::create_new_tmp_ledger,
     solana_runtime::{
@@ -29,7 +28,7 @@ use {
         },
         snapshot_config::SnapshotConfig,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::{Account, AccountSharedData},
         client::SyncClient,
         clock::{Slot, DEFAULT_DEV_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT},
@@ -285,7 +284,6 @@ impl LocalCluster {
             DEFAULT_TPU_USE_QUIC,
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
             DEFAULT_TPU_ENABLE_UDP,
-            Arc::new(RwLock::new(None)),
         );
 
         let mut validators = HashMap::new();
@@ -485,7 +483,6 @@ impl LocalCluster {
             DEFAULT_TPU_USE_QUIC,
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
             DEFAULT_TPU_ENABLE_UDP,
-            Arc::new(RwLock::new(None)),
         );
 
         let validator_pubkey = validator_keypair.pubkey();
@@ -848,7 +845,6 @@ impl Cluster for LocalCluster {
             DEFAULT_TPU_USE_QUIC,
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
             DEFAULT_TPU_ENABLE_UDP,
-            Arc::new(RwLock::new(None)),
         );
         cluster_validator_info.validator = Some(restarted_node);
         cluster_validator_info

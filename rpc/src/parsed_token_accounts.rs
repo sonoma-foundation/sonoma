@@ -9,7 +9,7 @@ use {
     },
     solana_client::rpc_response::RpcKeyedAccount,
     solana_runtime::bank::Bank,
-    solana_sdk::{
+    sonoma_sdk::{
         account::{AccountSharedData, ReadableAccount},
         pubkey::Pubkey,
     },

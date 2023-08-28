@@ -9,7 +9,7 @@ use {
     sonoma_cli_output::OutputFormat,
     solana_client::rpc_client::RpcClient,
     solana_faucet::faucet::run_local_faucet,
-    solana_sdk::{
+    sonoma_sdk::{
         account_utils::StateMut,
         bpf_loader,
         bpf_loader_upgradeable::{self, UpgradeableLoaderState},

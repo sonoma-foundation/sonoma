@@ -11,7 +11,7 @@ use {
     },
     clap::{value_t_or_exit, App, Arg, ArgMatches, SubCommand},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         compute_unit_price::{compute_unit_price_arg, COMPUTE_UNIT_PRICE_ARG},
         fee_payer::*,
         input_parsers::*,
@@ -30,8 +30,8 @@ use {
         blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
         rpc_config::RpcTransactionConfig, rpc_response::RpcKeyedAccount,
     },
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    sonoma_remote_wallet::remote_wallet::RemoteWalletManager,
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         message::Message,
         pubkey::Pubkey,

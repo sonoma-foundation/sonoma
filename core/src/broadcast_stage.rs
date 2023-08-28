@@ -16,14 +16,14 @@ use {
     itertools::Itertools,
     solana_gossip::{
         cluster_info::{ClusterInfo, ClusterInfoError},
-        legacy_contact_info::LegacyContactInfo as ContactInfo,
+        contact_info::ContactInfo,
     },
     solana_ledger::{blockstore::Blockstore, shred::Shred},
     solana_measure::measure::Measure,
     solana_metrics::{inc_new_counter_error, inc_new_counter_info},
     solana_poh::poh_recorder::WorkingBankEntry,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot,
         pubkey::Pubkey,
         signature::Keypair,
@@ -446,7 +446,7 @@ pub mod test {
             shred::{max_ticks_per_n_shreds, ProcessShredsStats, ReedSolomonCache, Shredder},
         },
         solana_runtime::bank::Bank,
-        solana_sdk::{
+        sonoma_sdk::{
             hash::Hash,
             pubkey::Pubkey,
             signature::{Keypair, Signer},

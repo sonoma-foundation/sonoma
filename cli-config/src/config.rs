@@ -24,13 +24,13 @@ lazy_static! {
     };
 }
 
-/// The Sonoma CLI configuration.
+/// The sonoma CLI configuration.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Config {
-    /// The RPC address of a Sonoma validator node.
+    /// The RPC address of a sonoma validator node.
     ///
     /// Typical values for mainnet, devnet, and testnet are [described in the
-    /// Solana documentation][rpcdocs].
+    /// sonoma documentation][rpcdocs].
     ///
     /// For local testing, the typical value is `http://localhost:8899`.
     ///
@@ -45,15 +45,15 @@ pub struct Config {
     pub websocket_url: String,
     /// The default signing source, which may be a keypair file, but may also
     /// represent several other types of signers, as described in the
-    /// documentation for `solana_clap_utils::keypair::signer_from_path`.
+    /// documentation for `sonoma_clap_utils::keypair::signer_from_path`.
     /// Because it represents sources other than a simple path, the name
     /// `keypair_path` is misleading, and exists for backwards compatibility
     /// reasons.
     ///
     /// The signing source can be loaded with either the `signer_from_path`
-    /// function, or with `solana_clap_utils::keypair::DefaultSigner`.
+    /// function, or with `sonoma_clap_utils::keypair::DefaultSigner`.
     pub keypair_path: String,
-    /// A mapping from Solana addresses to human-readable names.
+    /// A mapping from sonoma addresses to human-readable names.
     ///
     /// By default the only value in this map is the system program.
     #[serde(default)]
@@ -61,7 +61,7 @@ pub struct Config {
     /// The default commitment level.
     ///
     /// By default the value is "confirmed", as defined by
-    /// `solana_sdk::commitment_config::CommitmentLevel::Confirmed`.
+    /// `sonoma_sdk::commitment_config::CommitmentLevel::Confirmed`.
     #[serde(default)]
     pub commitment: String,
 }

@@ -1,7 +1,7 @@
 //! Example Rust-based BPF program that tests duplicate accounts passed via accounts
 
-extern crate solana_program;
-use solana_program::{
+extern crate sonoma_program;
+use sonoma_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction},
@@ -11,7 +11,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-solana_program::entrypoint!(process_instruction);
+sonoma_program::entrypoint!(process_instruction);
 fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

@@ -7,7 +7,7 @@ use {
         },
         snapshot_utils,
     },
-    solana_sdk::{client::SyncClient, commitment_config::CommitmentConfig},
+    sonoma_sdk::{client::SyncClient, commitment_config::CommitmentConfig},
     std::{path::Path, thread::sleep, time::Duration},
 };
 

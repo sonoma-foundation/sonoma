@@ -8,13 +8,13 @@ use {
         cluster_nodes::{make_test_cluster, new_cluster_nodes, ClusterNodes},
         retransmit_stage::RetransmitStage,
     },
-    solana_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+    solana_gossip::contact_info::ContactInfo,
     solana_ledger::{
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         shred::{Shred, ShredFlags},
     },
     solana_runtime::bank::Bank,
-    solana_sdk::{clock::Slot, pubkey::Pubkey},
+    sonoma_sdk::{clock::Slot, pubkey::Pubkey},
     test::Bencher,
 };
 

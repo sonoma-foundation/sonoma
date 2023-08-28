@@ -12,7 +12,7 @@ use {
         bank_forks::BankForks,
         commitment::BlockCommitmentCache,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::Account,
         clock::Slot,
         commitment_config::CommitmentLevel,
@@ -32,7 +32,7 @@ use {
         convert::TryFrom,
         io,
         net::{Ipv4Addr, SocketAddr},
-        sync::{atomic::AtomicBool, Arc, RwLock},
+        sync::{Arc, RwLock},
         thread::Builder,
         time::Duration,
     },
@@ -395,7 +395,6 @@ pub async fn start_tcp_server(
     bank_forks: Arc<RwLock<BankForks>>,
     block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
     connection_cache: Arc<ConnectionCache>,
-    exit: Arc<AtomicBool>,
 ) -> io::Result<()> {
     // Note: These settings are copied straight from the tarpc example.
     let server = tcp::listen(listen_addr, Bincode::default)
@@ -423,7 +422,6 @@ pub async fn start_tcp_server(
                 &connection_cache,
                 5_000,
                 0,
-                exit.clone(),
             );
 
             let server = BanksServer::new(

@@ -12,7 +12,7 @@ use {
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::*,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot,
         signature::{Keypair, Signer},
     },

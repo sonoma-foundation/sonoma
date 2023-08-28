@@ -1,7 +1,7 @@
 use {
     crate::{StoredExtendedRewards, StoredTransactionStatusMeta},
     solana_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
-    solana_sdk::{
+    sonoma_sdk::{
         hash::Hash,
         instruction::{CompiledInstruction, InstructionError},
         message::{
@@ -302,7 +302,7 @@ impl From<generated::Message> for VersionedMessage {
         let account_keys = value
             .account_keys
             .into_iter()
-            .map(|key| Pubkey::try_from(key).unwrap())
+            .map(|key| Pubkey::new(&key))
             .collect();
         let recent_blockhash = Hash::new(&value.recent_blockhash);
         let instructions = value.instructions.into_iter().map(|ix| ix.into()).collect();
@@ -494,20 +494,12 @@ impl TryFrom<generated::TransactionStatusMeta> for TransactionStatusMeta {
         let loaded_addresses = LoadedAddresses {
             writable: loaded_writable_addresses
                 .into_iter()
-                .map(Pubkey::try_from)
-                .collect::<Result<_, _>>()
-                .map_err(|err| {
-                    let err = format!("Invalid writable address: {err:?}");
-                    Self::Error::new(bincode::ErrorKind::Custom(err))
-                })?,
+                .map(|key| Pubkey::new(&key))
+                .collect(),
             readonly: loaded_readonly_addresses
                 .into_iter()
-                .map(Pubkey::try_from)
-                .collect::<Result<_, _>>()
-                .map_err(|err| {
-                    let err = format!("Invalid readonly address: {err:?}");
-                    Self::Error::new(bincode::ErrorKind::Custom(err))
-                })?,
+                .map(|key| Pubkey::new(&key))
+                .collect(),
         };
         let return_data = if return_data_none {
             None
@@ -608,7 +600,7 @@ impl From<MessageAddressTableLookup> for generated::MessageAddressTableLookup {
 impl From<generated::MessageAddressTableLookup> for MessageAddressTableLookup {
     fn from(value: generated::MessageAddressTableLookup) -> Self {
         Self {
-            account_key: Pubkey::try_from(value.account_key).unwrap(),
+            account_key: Pubkey::new(&value.account_key),
             writable_indexes: value.writable_indexes,
             readonly_indexes: value.readonly_indexes,
         }
@@ -627,7 +619,7 @@ impl From<TransactionReturnData> for generated::ReturnData {
 impl From<generated::ReturnData> for TransactionReturnData {
     fn from(value: generated::ReturnData) -> Self {
         Self {
-            program_id: Pubkey::try_from(value.program_id).unwrap(),
+            program_id: Pubkey::new(&value.program_id),
             data: value.data,
         }
     }

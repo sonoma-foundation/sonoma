@@ -2,8 +2,8 @@
 
 use {
     solana_bpf_loader_program::{process_instruction, upgradeable::id},
-    solana_program_test::*,
-    solana_sdk::{
+    sonoma_program_test::*,
+    sonoma_sdk::{
         account::AccountSharedData,
         account_utils::StateMut,
         bpf_loader_upgradeable::UpgradeableLoaderState,

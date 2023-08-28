@@ -1,4 +1,4 @@
-use {super::*, solana_sdk::message::AccountKeys, std::time::Instant};
+use {super::*, sonoma_sdk::message::AccountKeys, std::time::Instant};
 
 #[derive(Default)]
 pub struct PurgeStats {
@@ -533,7 +533,7 @@ pub mod tests {
         },
         bincode::serialize,
         solana_entry::entry::next_entry_mut,
-        solana_sdk::{
+        sonoma_sdk::{
             hash::{hash, Hash},
             message::Message,
             transaction::Transaction,
@@ -578,8 +578,8 @@ pub mod tests {
                 .write_transaction_status(
                     x,
                     Signature::new(&random_bytes),
-                    vec![&Pubkey::try_from(&random_bytes[..32]).unwrap()],
-                    vec![&Pubkey::try_from(&random_bytes[32..]).unwrap()],
+                    vec![&Pubkey::new(&random_bytes[0..32])],
+                    vec![&Pubkey::new(&random_bytes[32..])],
                     TransactionStatusMeta::default(),
                 )
                 .unwrap();
@@ -593,8 +593,8 @@ pub mod tests {
                 .write_transaction_status(
                     x,
                     Signature::new(&random_bytes),
-                    vec![&Pubkey::try_from(&random_bytes[..32]).unwrap()],
-                    vec![&Pubkey::try_from(&random_bytes[32..]).unwrap()],
+                    vec![&Pubkey::new(&random_bytes[0..32])],
+                    vec![&Pubkey::new(&random_bytes[32..])],
                     TransactionStatusMeta::default(),
                 )
                 .unwrap();
@@ -628,8 +628,8 @@ pub mod tests {
                 .write_transaction_status(
                     slot,
                     Signature::new(&random_bytes),
-                    vec![&Pubkey::try_from(&random_bytes[..32]).unwrap()],
-                    vec![&Pubkey::try_from(&random_bytes[32..]).unwrap()],
+                    vec![&Pubkey::new(&random_bytes[0..32])],
+                    vec![&Pubkey::new(&random_bytes[32..])],
                     TransactionStatusMeta::default(),
                 )
                 .unwrap();
@@ -828,8 +828,8 @@ pub mod tests {
                 .write_transaction_status(
                     x,
                     signature,
-                    vec![&Pubkey::try_from(&random_bytes[..32]).unwrap()],
-                    vec![&Pubkey::try_from(&random_bytes[32..]).unwrap()],
+                    vec![&Pubkey::new(&random_bytes[0..32])],
+                    vec![&Pubkey::new(&random_bytes[32..])],
                     TransactionStatusMeta::default(),
                 )
                 .unwrap();
@@ -871,8 +871,8 @@ pub mod tests {
                 .write_transaction_status(
                     x,
                     signature,
-                    vec![&Pubkey::try_from(&random_bytes[..32]).unwrap()],
-                    vec![&Pubkey::try_from(&random_bytes[32..]).unwrap()],
+                    vec![&Pubkey::new(&random_bytes[0..32])],
+                    vec![&Pubkey::new(&random_bytes[32..])],
                     TransactionStatusMeta::default(),
                 )
                 .unwrap();

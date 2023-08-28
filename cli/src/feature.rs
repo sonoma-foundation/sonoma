@@ -6,13 +6,13 @@ use {
     clap::{App, AppSettings, Arg, ArgMatches, SubCommand},
     console::style,
     serde::{Deserialize, Serialize},
-    solana_clap_utils::{input_parsers::*, input_validators::*, keypair::*},
+    sonoma_clap_utils::{input_parsers::*, input_validators::*, keypair::*},
     sonoma_cli_output::{cli_version::CliVersion, QuietDisplay, VerboseDisplay},
     solana_client::{
         client_error::ClientError, rpc_client::RpcClient, rpc_request::MAX_MULTIPLE_ACCOUNTS,
     },
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    sonoma_remote_wallet::remote_wallet::RemoteWalletManager,
+    sonoma_sdk::{
         account::Account,
         clock::Slot,
         epoch_schedule::EpochSchedule,

@@ -1,6 +1,4 @@
 module.exports = {
-  // load the API specific sidebars file
-  ...require("./sidebars/api.js"),
   introductionSidebar: [
     {
       type: "category",
@@ -184,23 +182,11 @@ module.exports = {
     },
     {
       type: "category",
-      label: "Advanced Concepts",
-      // collapsed: false,
-      items: [
-        {
-          type: "doc",
-          id: "learn/state-compression",
-          label: "State Compression",
-        },
-      ],
-    },
-    {
-      type: "category",
       label: "Clients",
       items: [
         {
-          type: "link",
-          href: "/api",
+          type: "doc",
+          id: "developing/clients/jsonrpc-api",
           label: "JSON RPC API",
         },
         {
@@ -217,17 +203,6 @@ module.exports = {
           type: "doc",
           id: "developing/clients/rust-api",
           label: "Rust API",
-        },
-      ],
-    },
-    {
-      type: "category",
-      label: "Guides",
-      items: [
-        {
-          type: "doc",
-          id: "developing/guides/compressed-nfts",
-          label: "Compressed NFTs",
         },
       ],
     },

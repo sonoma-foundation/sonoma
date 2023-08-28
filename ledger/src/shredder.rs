@@ -7,13 +7,13 @@ use {
     lru::LruCache,
     rayon::{prelude::*, ThreadPool},
     reed_solomon_erasure::{
-        galois_8::ReedSolomon,
+        galois_8::Field,
         Error::{InvalidIndex, TooFewDataShards, TooFewShardsPresent},
     },
     solana_entry::entry::Entry,
     solana_measure::measure::Measure,
     solana_rayon_threadlimit::get_thread_count,
-    solana_sdk::{clock::Slot, signature::Keypair},
+    sonoma_sdk::{clock::Slot, signature::Keypair},
     std::{
         borrow::Borrow,
         fmt::Debug,
@@ -37,6 +37,8 @@ pub(crate) const ERASURE_BATCH_SIZE: [usize; 33] = [
     43, 45, 46, 48, 49, 51, 52, 53, // 24
     55, 56, 58, 59, 60, 62, 63, 64, // 32
 ];
+
+type ReedSolomon = reed_solomon_erasure::ReedSolomon<Field>;
 
 pub struct ReedSolomonCache(
     Mutex<LruCache<(/*data_shards:*/ usize, /*parity_shards:*/ usize), Arc<ReedSolomon>>>,
@@ -475,7 +477,7 @@ mod tests {
         bincode::serialized_size,
         matches::assert_matches,
         rand::{seq::SliceRandom, Rng},
-        solana_sdk::{
+        sonoma_sdk::{
             hash::{self, hash, Hash},
             pubkey::Pubkey,
             shred_version,
@@ -978,13 +980,13 @@ mod tests {
         let mut rng = rand::thread_rng();
         let txs = repeat_with(|| {
             let from_pubkey = Pubkey::new_unique();
-            let instruction = solana_sdk::system_instruction::transfer(
+            let instruction = sonoma_sdk::system_instruction::transfer(
                 &from_pubkey,
                 &Pubkey::new_unique(), // to
                 rng.gen(),             // lamports
             );
-            let message = solana_sdk::message::Message::new(&[instruction], Some(&from_pubkey));
-            let mut tx = solana_sdk::transaction::Transaction::new_unsigned(message);
+            let message = sonoma_sdk::message::Message::new(&[instruction], Some(&from_pubkey));
+            let mut tx = sonoma_sdk::transaction::Transaction::new_unsigned(message);
             // Also randomize the signatre bytes.
             let mut signature = [0u8; 64];
             rng.fill(&mut signature[..]);
@@ -1231,7 +1233,7 @@ mod tests {
 
     #[test]
     fn test_max_shreds_per_slot() {
-        for num_data_shreds in 32..128 {
+        for num_data_shreds in 0..128 {
             let num_coding_shreds = get_erasure_batch_size(num_data_shreds)
                 .checked_sub(num_data_shreds)
                 .unwrap();

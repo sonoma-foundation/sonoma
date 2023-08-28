@@ -57,11 +57,11 @@ main {
 }
 
 .cards__container {
-  /* margin-bottom: 0; */
+  margin: 3em 0;
 }
 
 .cards__container .col {
-  margin-bottom: 3em;
+  margin-bottom: 1em;
 }
 
 .card {
@@ -73,12 +73,7 @@ main {
   transition-duration: 200ms;
   align-items: start;
   height: 100%;
-  /* box-shadow: 0 8px 15px 2px rgba(86, 91, 115, 0.1); */
-  border: 1px solid #ccc;
-}
-
-[data-theme="dark"] .card {
-  border-color: #444;
+  box-shadow: 0 8px 15px 2px rgba(86, 91, 115, 0.1);
 }
 
 .card a {
@@ -86,8 +81,7 @@ main {
 }
 
 .card:hover {
-  /* transform: translate(0px, -5px); */
-  border-color: var(--ifm-color-primary);
+  transform: translate(0px, -5px);
 }
 
 .footer--dark {

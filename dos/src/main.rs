@@ -53,11 +53,11 @@ use {
     solana_core::serve_repair::{RepairProtocol, RepairRequestHeader, ServeRepair},
     solana_dos::cli::*,
     solana_gossip::{
+        contact_info::ContactInfo,
         gossip_service::{discover, get_multi_client},
-        legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
     solana_measure::measure::Measure,
-    solana_sdk::{
+    sonoma_sdk::{
         hash::Hash,
         instruction::CompiledInstruction,
         message::Message,
@@ -418,7 +418,7 @@ fn get_target(
     let mut target = None;
     if nodes.is_empty() {
         // skip-gossip case
-        target = Some((solana_sdk::pubkey::new_rand(), entrypoint_addr));
+        target = Some((sonoma_sdk::pubkey::new_rand(), entrypoint_addr));
     } else {
         info!("************ NODE ***********");
         for node in nodes {
@@ -795,7 +795,7 @@ pub mod test {
             validator_configs::make_identical_validator_configs,
         },
         solana_rpc::rpc::JsonRpcConfig,
-        solana_sdk::timing::timestamp,
+        sonoma_sdk::timing::timestamp,
     };
 
     const TEST_SEND_BATCH_SIZE: usize = 1;
@@ -809,7 +809,7 @@ pub mod test {
     #[test]
     fn test_dos() {
         let nodes = [ContactInfo::new_localhost(
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             timestamp(),
         )];
         let entrypoint_addr = nodes[0].gossip;

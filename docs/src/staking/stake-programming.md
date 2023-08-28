@@ -11,7 +11,8 @@ stakes easier to manage.
 
 This off-chain program manages a large population of validators staked by a
 central authority. The Solana Foundation uses an auto-delegation bot to regularly delegate its
-stake to "non-delinquent" validators that meet specified performance requirements.
+stake to "non-delinquent" validators that meet specified performance requirements. More information can be found on the
+[official announcement](https://forums.solana.com/t/stake-o-matic-delegation-matching-program/790).
 
 #### Stake Pools
 

@@ -12,7 +12,7 @@ use {
         bank::Bank, bank_forks::BankForks, commitment::VOTE_THRESHOLD_SIZE,
         vote_account::VoteAccountsHashMap,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, UnixTimestamp},
         feature_set,
         hash::Hash,
@@ -182,8 +182,7 @@ pub struct Tower {
     // blockhash of the voted block itself, depending if the vote slot was refreshed.
     // For instance, a vote for slot 5, may be refreshed/resubmitted for inclusion in
     //  block 10, in  which case `last_vote_tx_blockhash` equals the blockhash of 10, not 5.
-    // For non voting validators this is None
-    last_vote_tx_blockhash: Option<Hash>,
+    last_vote_tx_blockhash: Hash,
     last_timestamp: BlockTimestamp,
     #[serde(skip)]
     // Restored last voted slot which cannot be found in SlotHistory at replayed root
@@ -206,7 +205,7 @@ impl Default for Tower {
             vote_state: VoteState::default(),
             last_vote: VoteTransaction::from(VoteStateUpdate::default()),
             last_timestamp: BlockTimestamp::default(),
-            last_vote_tx_blockhash: None,
+            last_vote_tx_blockhash: Hash::default(),
             stray_restored_slot: Option::default(),
             last_switch_threshold_check: Option::default(),
         };
@@ -418,51 +417,12 @@ impl Tower {
         self.vote_state.tower()
     }
 
-    pub fn last_vote_tx_blockhash(&self) -> Option<Hash> {
+    pub fn last_vote_tx_blockhash(&self) -> Hash {
         self.last_vote_tx_blockhash
     }
 
-    pub fn refresh_last_vote_timestamp(&mut self, heaviest_slot_on_same_fork: Slot) {
-        let timestamp = if let Some(last_vote_timestamp) = self.last_vote.timestamp() {
-            // To avoid a refreshed vote tx getting caught in deduplication filters,
-            // we need to update timestamp. Increment by smallest amount to avoid skewing
-            // the Timestamp Oracle.
-            last_vote_timestamp.saturating_add(1)
-        } else {
-            // If the previous vote did not send a timestamp due to clock error,
-            // use the last good timestamp + 1
-            datapoint_info!(
-                "refresh-timestamp-missing",
-                ("heaviest-slot", heaviest_slot_on_same_fork, i64),
-                ("last-timestamp", self.last_timestamp.timestamp, i64),
-                ("last-slot", self.last_timestamp.slot, i64),
-            );
-            self.last_timestamp.timestamp.saturating_add(1)
-        };
-
-        if let Some(last_voted_slot) = self.last_vote.last_voted_slot() {
-            if heaviest_slot_on_same_fork <= last_voted_slot {
-                warn!(
-                    "Trying to refresh timestamp for vote on {last_voted_slot}
-                     using smaller heaviest bank {heaviest_slot_on_same_fork}"
-                );
-                return;
-            }
-            self.last_timestamp = BlockTimestamp {
-                slot: last_voted_slot,
-                timestamp,
-            };
-            self.last_vote.set_timestamp(Some(timestamp));
-        } else {
-            warn!(
-                "Trying to refresh timestamp for last vote on heaviest bank on same fork
-                   {heaviest_slot_on_same_fork}, but there is no vote to refresh"
-            );
-        }
-    }
-
     pub fn refresh_last_vote_tx_blockhash(&mut self, new_vote_tx_blockhash: Hash) {
-        self.last_vote_tx_blockhash = Some(new_vote_tx_blockhash);
+        self.last_vote_tx_blockhash = new_vote_tx_blockhash;
     }
 
     // Returns true if we have switched the new vote instruction that directly sets vote state
@@ -598,13 +558,6 @@ impl Tower {
                     timestamp,
                 };
                 return Some(timestamp);
-            } else {
-                datapoint_info!(
-                    "backwards-timestamp",
-                    ("slot", current_slot, i64),
-                    ("timestamp", timestamp, i64),
-                    ("last-timestamp", self.last_timestamp.timestamp, i64),
-                )
             }
         }
         None
@@ -1488,7 +1441,7 @@ pub mod test {
         itertools::Itertools,
         solana_ledger::{blockstore::make_slot_entries, get_tmp_ledger_path},
         solana_runtime::{bank::Bank, vote_account::VoteAccount},
-        solana_sdk::{
+        sonoma_sdk::{
             account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
             clock::Slot,
             hash::Hash,
@@ -1528,7 +1481,7 @@ pub mod test {
                 )
                 .expect("serialize state");
                 (
-                    solana_sdk::pubkey::new_rand(),
+                    sonoma_sdk::pubkey::new_rand(),
                     (*lamports, VoteAccount::try_from(account).unwrap()),
                 )
             })
@@ -2622,44 +2575,6 @@ pub mod test {
         assert!(tower.maybe_timestamp(3).is_none()); // slot 3 gets no timestamp
     }
 
-    #[test]
-    fn test_refresh_last_vote_timestamp() {
-        let mut tower = Tower::default();
-
-        // Tower has no vote or timestamp
-        tower.last_vote.set_timestamp(None);
-        tower.refresh_last_vote_timestamp(5);
-        assert_eq!(tower.last_vote.timestamp(), None);
-        assert_eq!(tower.last_timestamp.slot, 0);
-        assert_eq!(tower.last_timestamp.timestamp, 0);
-
-        // Tower has vote no timestamp, but is greater than heaviest_bank
-        tower.last_vote =
-            VoteTransaction::from(VoteStateUpdate::from(vec![(0, 3), (1, 2), (6, 1)]));
-        assert_eq!(tower.last_vote.timestamp(), None);
-        tower.refresh_last_vote_timestamp(5);
-        assert_eq!(tower.last_vote.timestamp(), None);
-        assert_eq!(tower.last_timestamp.slot, 0);
-        assert_eq!(tower.last_timestamp.timestamp, 0);
-
-        // Tower has vote with no timestamp
-        tower.last_vote =
-            VoteTransaction::from(VoteStateUpdate::from(vec![(0, 3), (1, 2), (2, 1)]));
-        assert_eq!(tower.last_vote.timestamp(), None);
-        tower.refresh_last_vote_timestamp(5);
-        assert_eq!(tower.last_vote.timestamp(), Some(1));
-        assert_eq!(tower.last_timestamp.slot, 2);
-        assert_eq!(tower.last_timestamp.timestamp, 1);
-
-        // Vote has timestamp
-        tower.last_vote =
-            VoteTransaction::from(VoteStateUpdate::from(vec![(0, 3), (1, 2), (2, 1)]));
-        tower.refresh_last_vote_timestamp(5);
-        assert_eq!(tower.last_vote.timestamp(), Some(2));
-        assert_eq!(tower.last_timestamp.slot, 2);
-        assert_eq!(tower.last_timestamp.timestamp, 2);
-    }
-
     fn run_test_load_tower_snapshot<F, G>(
         modify_original: F,
         modify_serialized: G,
@@ -3118,7 +3033,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_all_rooted_with_too_old() {
-        use solana_sdk::slot_history::MAX_ENTRIES;
+        use sonoma_sdk::slot_history::MAX_ENTRIES;
 
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -3244,7 +3159,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_too_old_tower() {
-        use solana_sdk::slot_history::MAX_ENTRIES;
+        use sonoma_sdk::slot_history::MAX_ENTRIES;
 
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -3299,7 +3214,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_out_of_order() {
-        use solana_sdk::slot_history::MAX_ENTRIES;
+        use sonoma_sdk::slot_history::MAX_ENTRIES;
 
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower

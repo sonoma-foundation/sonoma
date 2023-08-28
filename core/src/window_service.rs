@@ -22,7 +22,7 @@ use {
     solana_metrics::inc_new_counter_error,
     solana_perf::packet::{Packet, PacketBatch},
     solana_rayon_threadlimit::get_thread_count,
-    solana_sdk::clock::Slot,
+    sonoma_sdk::clock::Slot,
     std::{
         cmp::Reverse,
         collections::{HashMap, HashSet},
@@ -173,7 +173,7 @@ fn verify_repair(
                 .register_response(
                     repair_meta.nonce,
                     shred,
-                    solana_sdk::timing::timestamp(),
+                    sonoma_sdk::timing::timestamp(),
                     |_| (),
                 )
                 .is_some()
@@ -483,13 +483,13 @@ mod test {
     use {
         super::*,
         solana_entry::entry::{create_ticks, Entry},
-        solana_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+        solana_gossip::contact_info::ContactInfo,
         solana_ledger::{
             blockstore::{make_many_slot_entries, Blockstore},
             get_tmp_ledger_path,
             shred::{ProcessShredsStats, Shredder},
         },
-        solana_sdk::{
+        sonoma_sdk::{
             hash::Hash,
             signature::{Keypair, Signer},
             timing::timestamp,

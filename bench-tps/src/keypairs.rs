@@ -5,7 +5,7 @@ use {
     },
     log::*,
     solana_genesis::Base64Account,
-    solana_sdk::signature::{Keypair, Signer},
+    sonoma_sdk::signature::{Keypair, Signer},
     std::{collections::HashMap, fs::File, path::Path, process::exit, sync::Arc},
 };
 

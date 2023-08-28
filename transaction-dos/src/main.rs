@@ -4,12 +4,12 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    solana_clap_utils::input_parsers::pubkey_of,
+    sonoma_clap_utils::input_parsers::pubkey_of,
     sonoma_cli::{cli::CliConfig, program::process_deploy},
     solana_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
     solana_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
     solana_gossip::gossip_service::discover,
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         instruction::{AccountMeta, Instruction},
         message::Message,
@@ -636,7 +636,7 @@ pub mod test {
             validator_configs::make_identical_validator_configs,
         },
         solana_measure::measure::Measure,
-        solana_sdk::poh_config::PohConfig,
+        sonoma_sdk::poh_config::PohConfig,
     };
 
     #[test]
@@ -660,7 +660,7 @@ pub mod test {
             &account_metas,
         );
         let signers: Vec<&Keypair> = vec![&keypair];
-        let blockhash = solana_sdk::hash::Hash::default();
+        let blockhash = sonoma_sdk::hash::Hash::default();
         let tx = Transaction::new(&signers, message, blockhash);
         let size = bincode::serialized_size(&tx).unwrap();
         info!("size:{}", size);

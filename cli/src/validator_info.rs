@@ -10,7 +10,7 @@ use {
     solana_account_decoder::validator_info::{
         self, ValidatorInfo, MAX_LONG_FIELD_LENGTH, MAX_SHORT_FIELD_LENGTH,
     },
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         input_parsers::pubkey_of,
         input_validators::{is_pubkey, is_url},
         keypair::DefaultSigner,
@@ -18,8 +18,8 @@ use {
     sonoma_cli_output::{CliValidatorInfo, CliValidatorInfoVec},
     solana_client::rpc_client::RpcClient,
     solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState},
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    sonoma_remote_wallet::remote_wallet::RemoteWalletManager,
+    sonoma_sdk::{
         account::Account,
         message::Message,
         pubkey::Pubkey,
@@ -137,11 +137,11 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
     fn validator_info_subcommands(self) -> Self {
         self.subcommand(
             SubCommand::with_name("validator-info")
-                .about("Publish/get Validator info on Sonoma")
+                .about("Publish/get Validator info on sonoma")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(
                     SubCommand::with_name("publish")
-                        .about("Publish Validator info on Sonoma")
+                        .about("Publish Validator info on sonoma")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .short("p")
@@ -197,7 +197,7 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
                 )
                 .subcommand(
                     SubCommand::with_name("get")
-                        .about("Get and parse Sonoma Validator info")
+                        .about("Get and parse sonoma Validator info")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .index(1)
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn test_verify_keybase_username_not_string() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         let value = Value::Bool(true);
 
         assert_eq!(
@@ -516,7 +516,7 @@ mod tests {
 
     #[test]
     fn test_parse_validator_info() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         let keys = vec![(validator_info::id(), false), (pubkey, true)];
         let config = ConfigKeys { keys };
 
@@ -545,7 +545,7 @@ mod tests {
         assert!(parse_validator_info(
             &Pubkey::default(),
             &Account {
-                owner: solana_sdk::pubkey::new_rand(),
+                owner: sonoma_sdk::pubkey::new_rand(),
                 ..Account::default()
             }
         )

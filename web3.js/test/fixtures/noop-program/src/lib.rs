@@ -1,6 +1,6 @@
 //! Example Rust-based BPF program that prints out the parameters passed to it
 
-use solana_program::{
+use sonoma_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, log::*, msg, program::set_return_data,
     pubkey::Pubkey,
 };
@@ -17,7 +17,7 @@ fn return_sstruct() -> SStruct {
     SStruct { x: 1, y: 2, z: 3 }
 }
 
-solana_program::entrypoint!(process_instruction);
+sonoma_program::entrypoint!(process_instruction);
 fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

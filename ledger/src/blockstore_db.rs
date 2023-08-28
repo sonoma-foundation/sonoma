@@ -25,7 +25,7 @@ use {
     },
     serde::{de::DeserializeOwned, Serialize},
     solana_runtime::hardened_unpack::UnpackError,
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, UnixTimestamp},
         pubkey::Pubkey,
         signature::Signature,
@@ -651,7 +651,7 @@ impl Column for columns::AddressSignatures {
 
     fn index(key: &[u8]) -> (u64, Pubkey, Slot, Signature) {
         let index = BigEndian::read_u64(&key[0..8]);
-        let pubkey = Pubkey::try_from(&key[8..40]).unwrap();
+        let pubkey = Pubkey::new(&key[8..40]);
         let slot = BigEndian::read_u64(&key[40..48]);
         let signature = Signature::new(&key[48..112]);
         (index, pubkey, slot, signature)
@@ -782,7 +782,7 @@ impl Column for columns::ProgramCosts {
     }
 
     fn index(key: &[u8]) -> Self::Index {
-        Pubkey::try_from(&key[..32]).unwrap()
+        Pubkey::new(&key[0..32])
     }
 
     fn primary_index(_index: Self::Index) -> u64 {

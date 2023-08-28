@@ -1,7 +1,7 @@
 use {
     serde::{Deserialize, Serialize},
     solana_measure::measure::Measure,
-    solana_program_runtime::{
+    sonoma_program_runtime::{
         compute_budget::ComputeBudget,
         executor_cache::Executors,
         invoke_context::{BuiltinProgram, InvokeContext},
@@ -9,7 +9,7 @@ use {
         sysvar_cache::SysvarCache,
         timings::{ExecuteDetailsTimings, ExecuteTimings},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::WritableAccount,
         feature_set::{prevent_calling_precompiles_as_programs, FeatureSet},
         hash::Hash,
@@ -179,7 +179,7 @@ mod tests {
     use {
         super::*,
         crate::rent_collector::RentCollector,
-        solana_sdk::{
+        sonoma_sdk::{
             account::{AccountSharedData, ReadableAccount},
             instruction::{AccountMeta, Instruction, InstructionError},
             message::{AccountKeys, LegacyMessage, Message},
@@ -466,7 +466,7 @@ mod tests {
             }
         }
 
-        let mock_program_id = Pubkey::from([2u8; 32]);
+        let mock_program_id = Pubkey::new(&[2u8; 32]);
         let rent_collector = RentCollector::default();
         let builtin_programs = &[BuiltinProgram {
             program_id: mock_program_id,
@@ -475,11 +475,11 @@ mod tests {
 
         let accounts = vec![
             (
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
                 AccountSharedData::new(100, 1, &mock_program_id),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
                 AccountSharedData::new(0, 1, &mock_program_id),
             ),
             (

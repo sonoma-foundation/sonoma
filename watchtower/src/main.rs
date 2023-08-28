@@ -4,7 +4,7 @@
 use {
     clap::{crate_description, crate_name, value_t, value_t_or_exit, App, Arg},
     log::*,
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         input_parsers::pubkeys_of,
         input_validators::{is_parsable, is_pubkey_or_keypair, is_url},
     },
@@ -12,7 +12,7 @@ use {
     solana_client::{client_error, rpc_client::RpcClient, rpc_response::RpcVoteAccountStatus},
     solana_metrics::{datapoint_error, datapoint_info},
     solana_notifier::Notifier,
-    solana_sdk::{
+    sonoma_sdk::{
         hash::Hash,
         native_token::{sol_to_lamports, Sol},
         pubkey::Pubkey,

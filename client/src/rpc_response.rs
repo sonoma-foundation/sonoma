@@ -2,7 +2,7 @@ use {
     crate::client_error,
     serde::{Deserialize, Deserializer, Serialize, Serializer},
     solana_account_decoder::{parse_token::UiTokenAmount, UiAccount},
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         fee_calculator::{FeeCalculator, FeeRateGovernor},
         hash::Hash,
@@ -543,7 +543,6 @@ pub struct RpcSnapshotSlotInfo {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct RpcPrioritizationFee {
     pub slot: Slot,
     pub prioritization_fee: u64,

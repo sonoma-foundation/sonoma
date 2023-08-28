@@ -12,14 +12,14 @@ use {
     },
     solana_gossip::{
         cluster_info::{ClusterInfo, Node},
-        legacy_contact_info::LegacyContactInfo as ContactInfo,
+        contact_info::ContactInfo,
     },
     solana_ledger::{
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         shred::{Shred, ShredFlags},
     },
     solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{
+    sonoma_sdk::{
         pubkey,
         signature::Keypair,
         timing::{timestamp, AtomicInterval},

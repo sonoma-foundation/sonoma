@@ -18,12 +18,12 @@ use {
     bip39::{Language, Mnemonic, Seed},
     clap::ArgMatches,
     rpassword::prompt_password,
-    solana_remote_wallet::{
+    sonoma_remote_wallet::{
         locator::{Locator as RemoteWalletLocator, LocatorError as RemoteWalletLocatorError},
         remote_keypair::generate_remote_keypair,
         remote_wallet::{maybe_wallet_manager, RemoteWalletError, RemoteWalletManager},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         derivation_path::{DerivationPath, DerivationPathError},
         hash::Hash,
         message::Message,
@@ -135,8 +135,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use solana_clap_v3_utils::keypair::DefaultSigner;
-    /// use solana_clap_v3_utils::offline::OfflineArgs;
+    /// use sonoma_clap_v3_utils::keypair::DefaultSigner;
+    /// use sonoma_clap_v3_utils::offline::OfflineArgs;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -205,9 +205,9 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use solana_clap_v3_utils::keypair::{DefaultSigner, signer_from_path};
-    /// use solana_clap_v3_utils::offline::OfflineArgs;
-    /// use solana_sdk::signer::Signer;
+    /// use sonoma_clap_v3_utils::keypair::{DefaultSigner, signer_from_path};
+    /// use sonoma_clap_v3_utils::offline::OfflineArgs;
+    /// use sonoma_sdk::signer::Signer;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -280,8 +280,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use solana_clap_v3_utils::keypair::DefaultSigner;
-    /// use solana_clap_v3_utils::offline::OfflineArgs;
+    /// use sonoma_clap_v3_utils::keypair::DefaultSigner;
+    /// use sonoma_clap_v3_utils::offline::OfflineArgs;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -327,8 +327,8 @@ impl DefaultSigner {
     ///
     /// ```no_run
     /// use clap::{Arg, Command};
-    /// use solana_clap_v3_utils::keypair::{SignerFromPathConfig, DefaultSigner};
-    /// use solana_clap_v3_utils::offline::OfflineArgs;
+    /// use sonoma_clap_v3_utils::keypair::{SignerFromPathConfig, DefaultSigner};
+    /// use sonoma_clap_v3_utils::offline::OfflineArgs;
     ///
     /// let clap_app = Command::new("my-program")
     ///     // The argument we'll parse as a signer "path"
@@ -661,8 +661,8 @@ pub struct SignerFromPathConfig {
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use solana_clap_v3_utils::keypair::signer_from_path;
-/// use solana_clap_v3_utils::offline::OfflineArgs;
+/// use sonoma_clap_v3_utils::keypair::signer_from_path;
+/// use sonoma_clap_v3_utils::offline::OfflineArgs;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -721,8 +721,8 @@ pub fn signer_from_path(
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use solana_clap_v3_utils::keypair::{signer_from_path_with_config, SignerFromPathConfig};
-/// use solana_clap_v3_utils::offline::OfflineArgs;
+/// use sonoma_clap_v3_utils::keypair::{signer_from_path_with_config, SignerFromPathConfig};
+/// use sonoma_clap_v3_utils::offline::OfflineArgs;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -789,12 +789,11 @@ pub fn signer_from_path_with_config(
                 *wallet_manager = maybe_wallet_manager()?;
             }
             if let Some(wallet_manager) = wallet_manager {
-                let confirm_key = matches.try_contains_id("confirm_key").unwrap_or(false);
                 Ok(Box::new(generate_remote_keypair(
                     locator,
                     derivation_path.unwrap_or_default(),
                     wallet_manager,
-                    confirm_key,
+                    matches.is_present("confirm_key"),
                     keypair_name,
                 )?))
             } else {
@@ -838,7 +837,7 @@ pub fn signer_from_path_with_config(
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use solana_clap_v3_utils::keypair::pubkey_from_path;
+/// use sonoma_clap_v3_utils::keypair::pubkey_from_path;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -918,12 +917,11 @@ pub fn resolve_signer_from_path(
                 *wallet_manager = maybe_wallet_manager()?;
             }
             if let Some(wallet_manager) = wallet_manager {
-                let confirm_key = matches.try_contains_id("confirm_key").unwrap_or(false);
                 let path = generate_remote_keypair(
                     locator,
                     derivation_path.unwrap_or_default(),
                     wallet_manager,
-                    confirm_key,
+                    matches.is_present("confirm_key"),
                     keypair_name,
                 )
                 .map(|keypair| keypair.path)?;
@@ -978,7 +976,7 @@ pub fn prompt_passphrase(prompt: &str) -> Result<String, Box<dyn error::Error>> 
 ///
 /// ```no_run
 /// use clap::{Arg, Command};
-/// use solana_clap_v3_utils::keypair::keypair_from_path;
+/// use sonoma_clap_v3_utils::keypair::keypair_from_path;
 ///
 /// let clap_app = Command::new("my-program")
 ///     // The argument we'll parse as a signer "path"
@@ -1129,8 +1127,8 @@ mod tests {
         super::*,
         crate::offline::OfflineArgs,
         clap::{Arg, Command},
-        solana_remote_wallet::{locator::Manufacturer, remote_wallet::initialize_wallet_manager},
-        solana_sdk::{signer::keypair::write_keypair_file, system_instruction},
+        sonoma_remote_wallet::{locator::Manufacturer, remote_wallet::initialize_wallet_manager},
+        sonoma_sdk::{signer::keypair::write_keypair_file, system_instruction},
         tempfile::{NamedTempFile, TempDir},
     };
 

@@ -1,7 +1,7 @@
 use {
     crate::id,
     serde::{Deserialize, Serialize},
-    solana_program::{
+    sonoma_program::{
         clock::Slot,
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,

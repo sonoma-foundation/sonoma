@@ -6,9 +6,9 @@ use {
         replay_stage::SUPERMINORITY_THRESHOLD,
     },
     solana_ledger::blockstore_processor::{ConfirmationProgress, ConfirmationTiming},
-    solana_program_runtime::{report_execute_timings, timings::ExecuteTimingType},
+    sonoma_program_runtime::{report_execute_timings, timings::ExecuteTimingType},
     solana_runtime::{bank::Bank, bank_forks::BankForks, vote_account::VoteAccountsHashMap},
-    solana_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey},
+    sonoma_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey},
     std::{
         collections::{BTreeMap, HashMap, HashSet},
         ops::Index,
@@ -161,22 +161,26 @@ impl ValidatorStakeInfo {
 pub const RETRANSMIT_BASE_DELAY_MS: u64 = 5_000;
 pub const RETRANSMIT_BACKOFF_CAP: u32 = 6;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RetransmitInfo {
-    pub(crate) retry_time: Instant,
-    pub(crate) retry_iteration: u32,
+    pub retry_time: Option<Instant>,
+    pub retry_iteration: u32,
 }
 
 impl RetransmitInfo {
     pub fn reached_retransmit_threshold(&self) -> bool {
         let backoff = std::cmp::min(self.retry_iteration, RETRANSMIT_BACKOFF_CAP);
         let backoff_duration_ms = (1_u64 << backoff) * RETRANSMIT_BASE_DELAY_MS;
-        self.retry_time.elapsed().as_millis() > u128::from(backoff_duration_ms)
+        self.retry_time
+            .map(|time| time.elapsed().as_millis() > backoff_duration_ms.into())
+            .unwrap_or(true)
     }
 
     pub fn increment_retry_iteration(&mut self) {
-        self.retry_iteration = self.retry_iteration.saturating_add(1);
-        self.retry_time = Instant::now();
+        if self.retry_time.is_some() {
+            self.retry_iteration += 1;
+        }
+        self.retry_time = Some(Instant::now());
     }
 }
 
@@ -244,10 +248,7 @@ impl ForkProgress {
                 total_epoch_stake,
                 ..PropagatedStats::default()
             },
-            retransmit_info: RetransmitInfo {
-                retry_time: Instant::now(),
-                retry_iteration: 0u32,
-            },
+            retransmit_info: RetransmitInfo::default(),
         }
     }
 
@@ -528,7 +529,7 @@ mod test {
     use {
         super::*,
         solana_runtime::vote_account::VoteAccount,
-        solana_sdk::account::{Account, AccountSharedData},
+        sonoma_sdk::account::{Account, AccountSharedData},
     };
 
     fn new_test_vote_account() -> VoteAccount {
@@ -542,7 +543,7 @@ mod test {
     #[test]
     fn test_add_vote_pubkey() {
         let mut stats = PropagatedStats::default();
-        let mut vote_pubkey = solana_sdk::pubkey::new_rand();
+        let mut vote_pubkey = sonoma_sdk::pubkey::new_rand();
 
         // Add a vote pubkey, the number of references in all_pubkeys
         // should be 2
@@ -556,7 +557,7 @@ mod test {
         assert_eq!(stats.propagated_validators_stake, 1);
 
         // Adding another pubkey should succeed
-        vote_pubkey = solana_sdk::pubkey::new_rand();
+        vote_pubkey = sonoma_sdk::pubkey::new_rand();
         stats.add_vote_pubkey(vote_pubkey, 2);
         assert!(stats.propagated_validators.contains(&vote_pubkey));
         assert_eq!(stats.propagated_validators_stake, 3);
@@ -566,7 +567,7 @@ mod test {
     fn test_add_node_pubkey_internal() {
         let num_vote_accounts = 10;
         let staked_vote_accounts = 5;
-        let vote_account_pubkeys: Vec<_> = std::iter::repeat_with(solana_sdk::pubkey::new_rand)
+        let vote_account_pubkeys: Vec<_> = std::iter::repeat_with(sonoma_sdk::pubkey::new_rand)
             .take(num_vote_accounts)
             .collect();
         let epoch_vote_accounts: HashMap<_, _> = vote_account_pubkeys
@@ -576,7 +577,7 @@ mod test {
             .collect();
 
         let mut stats = PropagatedStats::default();
-        let mut node_pubkey = solana_sdk::pubkey::new_rand();
+        let mut node_pubkey = sonoma_sdk::pubkey::new_rand();
 
         // Add a vote pubkey, the number of references in all_pubkeys
         // should be 2
@@ -597,7 +598,7 @@ mod test {
 
         // Adding another pubkey with same vote accounts should succeed, but stake
         // shouldn't increase
-        node_pubkey = solana_sdk::pubkey::new_rand();
+        node_pubkey = sonoma_sdk::pubkey::new_rand();
         stats.add_node_pubkey_internal(&node_pubkey, &vote_account_pubkeys, &epoch_vote_accounts);
         assert!(stats.propagated_node_ids.contains(&node_pubkey));
         assert_eq!(
@@ -607,8 +608,8 @@ mod test {
 
         // Adding another pubkey with different vote accounts should succeed
         // and increase stake
-        node_pubkey = solana_sdk::pubkey::new_rand();
-        let vote_account_pubkeys: Vec<_> = std::iter::repeat_with(solana_sdk::pubkey::new_rand)
+        node_pubkey = sonoma_sdk::pubkey::new_rand();
+        let vote_account_pubkeys: Vec<_> = std::iter::repeat_with(sonoma_sdk::pubkey::new_rand)
             .take(num_vote_accounts)
             .collect();
         let epoch_vote_accounts: HashMap<_, _> = vote_account_pubkeys

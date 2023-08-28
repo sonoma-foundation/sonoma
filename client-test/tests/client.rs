@@ -25,7 +25,7 @@ use {
         commitment::{BlockCommitmentCache, CommitmentSlots},
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot,
         commitment_config::{CommitmentConfig, CommitmentLevel},
         native_token::sol_to_lamports,
@@ -60,7 +60,7 @@ fn test_rpc_client() {
     let test_validator =
         TestValidator::with_no_fees(alice.pubkey(), None, SocketAddrSpace::Unspecified);
 
-    let bob_pubkey = solana_sdk::pubkey::new_rand();
+    let bob_pubkey = sonoma_sdk::pubkey::new_rand();
 
     let client = RpcClient::new(test_validator.rpc_url());
 
@@ -130,11 +130,9 @@ fn test_account_subscription() {
     bank_forks.write().unwrap().insert(bank1);
     let bob = Keypair::new();
     let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-    let max_complete_rewards_slot = Arc::new(AtomicU64::default());
     let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
         &exit,
         max_complete_transaction_status_slot,
-        max_complete_rewards_slot,
         bank_forks.clone(),
         Arc::new(RwLock::new(BlockCommitmentCache::default())),
         OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
@@ -246,12 +244,10 @@ fn test_block_subscription() {
         max_complete_transaction_status_slot,
     );
     let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-    let max_complete_rewards_slot = Arc::new(AtomicU64::default());
     // setup RpcSubscriptions && PubSubService
     let subscriptions = Arc::new(RpcSubscriptions::new_for_tests_with_blockstore(
         &exit,
         max_complete_transaction_status_slot,
-        max_complete_rewards_slot,
         blockstore.clone(),
         bank_forks.clone(),
         Arc::new(RwLock::new(BlockCommitmentCache::default())),
@@ -341,11 +337,9 @@ fn test_program_subscription() {
     bank_forks.write().unwrap().insert(bank1);
     let bob = Keypair::new();
     let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-    let max_complete_rewards_slot = Arc::new(AtomicU64::default());
     let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
         &exit,
         max_complete_transaction_status_slot,
-        max_complete_rewards_slot,
         bank_forks.clone(),
         Arc::new(RwLock::new(BlockCommitmentCache::default())),
         OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
@@ -429,11 +423,9 @@ fn test_root_subscription() {
     let bank1 = Bank::new_from_parent(&bank0, &Pubkey::default(), 1);
     bank_forks.write().unwrap().insert(bank1);
     let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-    let max_complete_rewards_slot = Arc::new(AtomicU64::default());
     let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
         &exit,
         max_complete_transaction_status_slot,
-        max_complete_rewards_slot,
         bank_forks.clone(),
         Arc::new(RwLock::new(BlockCommitmentCache::default())),
         OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks),
@@ -482,11 +474,9 @@ fn test_slot_subscription() {
     let optimistically_confirmed_bank =
         OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
     let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-    let max_complete_rewards_slot = Arc::new(AtomicU64::default());
     let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
         &exit,
         max_complete_transaction_status_slot,
-        max_complete_rewards_slot,
         bank_forks,
         Arc::new(RwLock::new(BlockCommitmentCache::default())),
         optimistically_confirmed_bank,
@@ -556,11 +546,9 @@ async fn test_slot_subscription_async() {
         let optimistically_confirmed_bank =
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
         let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-        let max_complete_rewards_slot = Arc::new(AtomicU64::default());
         let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
             &exit,
             max_complete_transaction_status_slot,
-            max_complete_rewards_slot,
             bank_forks,
             Arc::new(RwLock::new(BlockCommitmentCache::default())),
             optimistically_confirmed_bank,

@@ -16,12 +16,12 @@ use {
     serde::{Deserialize, Serialize},
     serde_json::{Map, Value},
     solana_account_decoder::parse_token::UiTokenAccount,
-    solana_clap_utils::keypair::SignOnly,
+    sonoma_clap_utils::keypair::SignOnly,
     solana_client::rpc_response::{
         RpcAccountBalance, RpcContactInfo, RpcInflationGovernor, RpcInflationRate, RpcKeyedAccount,
         RpcSupply, RpcVoteAccountInfo,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         epoch_info::EpochInfo,
         hash::Hash,
@@ -2826,7 +2826,7 @@ mod tests {
     use {
         super::*,
         clap::{App, Arg},
-        solana_sdk::{
+        sonoma_sdk::{
             message::Message,
             pubkey::Pubkey,
             signature::{keypair_from_seed, NullSigner, Signature, Signer, SignerError},
@@ -2862,10 +2862,10 @@ mod tests {
         }
 
         let present: Box<dyn Signer> = Box::new(keypair_from_seed(&[2u8; 32]).unwrap());
-        let absent: Box<dyn Signer> = Box::new(NullSigner::new(&Pubkey::from([3u8; 32])));
-        let bad: Box<dyn Signer> = Box::new(BadSigner::new(Pubkey::from([4u8; 32])));
-        let to = Pubkey::from([5u8; 32]);
-        let nonce = Pubkey::from([6u8; 32]);
+        let absent: Box<dyn Signer> = Box::new(NullSigner::new(&Pubkey::new(&[3u8; 32])));
+        let bad: Box<dyn Signer> = Box::new(BadSigner::new(Pubkey::new(&[4u8; 32])));
+        let to = Pubkey::new(&[5u8; 32]);
+        let nonce = Pubkey::new(&[6u8; 32]);
         let from = present.pubkey();
         let fee_payer = absent.pubkey();
         let nonce_auth = bad.pubkey();

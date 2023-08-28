@@ -32,7 +32,7 @@
 //!
 //! [future message format]: https://docs.solana.com/proposals/transactions-v2
 //!
-//! Despite living in the `solana-program` crate, there is no way to access the
+//! Despite living in the `sonoma-program` crate, there is no way to access the
 //! runtime's messages from within a Solana program, and only the legacy message
 //! types continue to be exposed to Solana programs, for backwards compatibility
 //! reasons.
@@ -51,9 +51,10 @@ mod non_bpf_modules {
     pub use {account_keys::*, address_loader::*, sanitized::*, versions::*};
 }
 
+use compiled_keys::*;
+pub use legacy::Message;
 #[cfg(not(target_os = "solana"))]
 pub use non_bpf_modules::*;
-pub use {compiled_keys::CompileError, legacy::Message};
 
 /// The length of a message header in bytes.
 pub const MESSAGE_HEADER_LENGTH: usize = 3;

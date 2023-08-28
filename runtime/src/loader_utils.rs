@@ -1,6 +1,6 @@
 use {
     serde::Serialize,
-    solana_sdk::{
+    sonoma_sdk::{
         bpf_loader_upgradeable::{self, UpgradeableLoaderState},
         client::Client,
         instruction::{AccountMeta, Instruction},
@@ -10,92 +10,65 @@ use {
         signature::{Keypair, Signer},
         system_instruction,
     },
-    std::{env, fs::File, io::Read, path::PathBuf},
 };
 
 const CHUNK_SIZE: usize = 512; // Size of chunk just needs to fit into tx
 
-pub fn load_program_from_file(name: &str) -> Vec<u8> {
-    let mut pathbuf = {
-        let current_exe = env::current_exe().unwrap();
-        PathBuf::from(current_exe.parent().unwrap().parent().unwrap())
-    };
-    pathbuf.push("bpf/");
-    pathbuf.push(name);
-    pathbuf.set_extension("so");
-    let mut file = File::open(&pathbuf).unwrap_or_else(|err| {
-        panic!("Failed to open {}: {}", pathbuf.display(), err);
-    });
-    let mut program = Vec::new();
-    file.read_to_end(&mut program).unwrap();
-    program
-}
-
-pub fn load_and_finalize_deprecated_program<T: Client>(
+pub fn load_program<T: Client>(
     bank_client: &T,
-    loader_id: &Pubkey,
-    program_keypair: Option<Keypair>,
-    payer_keypair: &Keypair,
-    name: &str,
-) -> (Keypair, Instruction) {
-    let program = load_program_from_file(name);
-    let program_keypair = program_keypair.unwrap_or_else(|| {
-        let program_keypair = Keypair::new();
-        let instruction = system_instruction::create_account(
-            &payer_keypair.pubkey(),
-            &program_keypair.pubkey(),
-            1.max(
-                bank_client
-                    .get_minimum_balance_for_rent_exemption(program.len())
-                    .unwrap(),
-            ),
-            program.len() as u64,
-            loader_id,
-        );
-        let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-        bank_client
-            .send_and_confirm_message(&[payer_keypair, &program_keypair], message)
-            .unwrap();
-        program_keypair
-    });
+    from_keypair: &Keypair,
+    loader_pubkey: &Pubkey,
+    program: Vec<u8>,
+) -> Pubkey {
+    let program_keypair = Keypair::new();
+    let program_pubkey = program_keypair.pubkey();
+
+    let instruction = system_instruction::create_account(
+        &from_keypair.pubkey(),
+        &program_pubkey,
+        1.max(
+            bank_client
+                .get_minimum_balance_for_rent_exemption(program.len())
+                .unwrap(),
+        ),
+        program.len() as u64,
+        loader_pubkey,
+    );
+    bank_client
+        .send_and_confirm_message(
+            &[from_keypair, &program_keypair],
+            Message::new(&[instruction], Some(&from_keypair.pubkey())),
+        )
+        .unwrap();
+
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
     for chunk in program.chunks(chunk_size) {
         let instruction =
-            loader_instruction::write(&program_keypair.pubkey(), loader_id, offset, chunk.to_vec());
-        let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
+            loader_instruction::write(&program_pubkey, loader_pubkey, offset, chunk.to_vec());
+        let message = Message::new(&[instruction], Some(&from_keypair.pubkey()));
         bank_client
-            .send_and_confirm_message(&[payer_keypair, &program_keypair], message)
+            .send_and_confirm_message(&[from_keypair, &program_keypair], message)
             .unwrap();
         offset += chunk_size as u32;
     }
-    let instruction = loader_instruction::finalize(&program_keypair.pubkey(), loader_id);
-    (program_keypair, instruction)
-}
 
-pub fn create_deprecated_program<T: Client>(
-    bank_client: &T,
-    loader_id: &Pubkey,
-    payer_keypair: &Keypair,
-    name: &str,
-) -> Pubkey {
-    let (program_keypair, instruction) =
-        load_and_finalize_deprecated_program(bank_client, loader_id, None, payer_keypair, name);
-    let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
+    let instruction = loader_instruction::finalize(&program_pubkey, loader_pubkey);
+    let message = Message::new(&[instruction], Some(&from_keypair.pubkey()));
     bank_client
-        .send_and_confirm_message(&[payer_keypair, &program_keypair], message)
+        .send_and_confirm_message(&[from_keypair, &program_keypair], message)
         .unwrap();
-    program_keypair.pubkey()
+
+    program_pubkey
 }
 
-pub fn load_upgradeable_buffer<T: Client>(
+pub fn load_buffer_account<T: Client>(
     bank_client: &T,
     from_keypair: &Keypair,
     buffer_keypair: &Keypair,
     buffer_authority_keypair: &Keypair,
-    name: &str,
-) -> Vec<u8> {
-    let program = load_program_from_file(name);
+    program: &[u8],
+) {
     let buffer_pubkey = buffer_keypair.pubkey();
     let buffer_authority_pubkey = buffer_authority_keypair.pubkey();
 
@@ -137,8 +110,6 @@ pub fn load_upgradeable_buffer<T: Client>(
             .unwrap();
         offset += chunk_size as u32;
     }
-
-    program
 }
 
 pub fn load_upgradeable_program<T: Client>(
@@ -147,22 +118,25 @@ pub fn load_upgradeable_program<T: Client>(
     buffer_keypair: &Keypair,
     executable_keypair: &Keypair,
     authority_keypair: &Keypair,
-    name: &str,
+    program: Vec<u8>,
 ) {
-    let program = load_upgradeable_buffer(
+    let program_pubkey = executable_keypair.pubkey();
+    let authority_pubkey = authority_keypair.pubkey();
+
+    load_buffer_account(
         bank_client,
         from_keypair,
         buffer_keypair,
         authority_keypair,
-        name,
+        &program,
     );
 
     let message = Message::new(
         &bpf_loader_upgradeable::deploy_with_max_program_len(
             &from_keypair.pubkey(),
-            &executable_keypair.pubkey(),
+            &program_pubkey,
             &buffer_keypair.pubkey(),
-            &authority_keypair.pubkey(),
+            &authority_pubkey,
             1.max(
                 bank_client
                     .get_minimum_balance_for_rent_exemption(
@@ -185,30 +159,23 @@ pub fn load_upgradeable_program<T: Client>(
 
 pub fn upgrade_program<T: Client>(
     bank_client: &T,
-    payer_keypair: &Keypair,
-    buffer_keypair: &Keypair,
-    executable_pubkey: &Pubkey,
+    from_keypair: &Keypair,
+    program_pubkey: &Pubkey,
+    buffer_pubkey: &Pubkey,
     authority_keypair: &Keypair,
-    name: &str,
+    spill_pubkey: &Pubkey,
 ) {
-    load_upgradeable_buffer(
-        bank_client,
-        payer_keypair,
-        buffer_keypair,
-        authority_keypair,
-        name,
-    );
     let message = Message::new(
         &[bpf_loader_upgradeable::upgrade(
-            executable_pubkey,
-            &buffer_keypair.pubkey(),
+            program_pubkey,
+            buffer_pubkey,
             &authority_keypair.pubkey(),
-            &payer_keypair.pubkey(),
+            spill_pubkey,
         )],
-        Some(&payer_keypair.pubkey()),
+        Some(&from_keypair.pubkey()),
     );
     bank_client
-        .send_and_confirm_message(&[payer_keypair, authority_keypair], message)
+        .send_and_confirm_message(&[from_keypair, authority_keypair], message)
         .unwrap();
 }
 

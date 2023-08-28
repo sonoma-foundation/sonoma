@@ -1,7 +1,7 @@
 use {
     solana_gossip::cluster_info::ClusterInfo,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::pubkey::Pubkey,
+    sonoma_sdk::pubkey::Pubkey,
     solana_streamer::streamer::StakedNodes,
     std::{
         collections::HashMap,

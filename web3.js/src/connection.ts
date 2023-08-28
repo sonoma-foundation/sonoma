@@ -2348,7 +2348,7 @@ export type HttpHeaders = {
   [header: string]: string;
 } & {
   // Prohibited headers; for internal use only.
-  'solana-client'?: never;
+  'sonoma-client'?: never;
 };
 
 /**
@@ -2387,7 +2387,7 @@ export type ConnectionConfig = {
 
 /** @internal */
 const COMMON_HTTP_HEADERS = {
-  'solana-client': `js/${process.env.npm_package_version ?? 'UNKNOWN'}`,
+  'sonoma-client': `js/${process.env.npm_package_version ?? 'UNKNOWN'}`,
 };
 
 /**

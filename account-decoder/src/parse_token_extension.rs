@@ -1,10 +1,9 @@
 use {
     crate::parse_token::UiAccountState,
-    solana_sdk::clock::UnixTimestamp,
+    sonoma_sdk::clock::UnixTimestamp,
     spl_token_2022::{
         extension::{self, BaseState, BaseStateWithExtensions, ExtensionType, StateWithExtensions},
         solana_program::pubkey::Pubkey,
-        solana_zk_token_sdk::zk_token_elgamal::pod::ElGamalPubkey,
     },
 };
 
@@ -25,7 +24,6 @@ pub enum UiExtension {
     CpiGuard(UiCpiGuard),
     PermanentDelegate(UiPermanentDelegate),
     UnparseableExtension,
-    NonTransferableAccount,
 }
 
 pub fn parse_extension<S: BaseState>(
@@ -76,7 +74,6 @@ pub fn parse_extension<S: BaseState>(
             .get_extension::<extension::permanent_delegate::PermanentDelegate>()
             .map(|&extension| UiExtension::PermanentDelegate(extension.into()))
             .unwrap_or(UiExtension::UnparseableExtension),
-        ExtensionType::NonTransferableAccount => UiExtension::NonTransferableAccount,
     }
 }
 
@@ -249,10 +246,10 @@ impl From<extension::permanent_delegate::PermanentDelegate> for UiPermanentDeleg
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct UiConfidentialTransferMint {
-    pub authority: Option<String>,
+    pub authority: String,
     pub auto_approve_new_accounts: bool,
-    pub auditor_encryption_pubkey: Option<String>,
-    pub withdraw_withheld_authority_encryption_pubkey: Option<String>,
+    pub auditor_encryption_pubkey: String,
+    pub withdraw_withheld_authority_encryption_pubkey: String,
     pub withheld_amount: String,
 }
 
@@ -262,19 +259,17 @@ impl From<extension::confidential_transfer::ConfidentialTransferMint>
     fn from(
         confidential_transfer_mint: extension::confidential_transfer::ConfidentialTransferMint,
     ) -> Self {
-        let authority: Option<Pubkey> = confidential_transfer_mint.authority.into();
-        let auditor_encryption_pubkey: Option<ElGamalPubkey> =
-            confidential_transfer_mint.auditor_encryption_pubkey.into();
-        let withdraw_withheld_authority_encryption_pubkey: Option<ElGamalPubkey> =
-            confidential_transfer_mint
-                .withdraw_withheld_authority_encryption_pubkey
-                .into();
         Self {
-            authority: authority.map(|pubkey| pubkey.to_string()),
+            authority: confidential_transfer_mint.authority.to_string(),
             auto_approve_new_accounts: confidential_transfer_mint.auto_approve_new_accounts.into(),
-            auditor_encryption_pubkey: auditor_encryption_pubkey.map(|pubkey| pubkey.to_string()),
-            withdraw_withheld_authority_encryption_pubkey:
-                withdraw_withheld_authority_encryption_pubkey.map(|pubkey| pubkey.to_string()),
+            auditor_encryption_pubkey: format!(
+                "{}",
+                confidential_transfer_mint.auditor_encryption_pubkey
+            ),
+            withdraw_withheld_authority_encryption_pubkey: format!(
+                "{}",
+                confidential_transfer_mint.withdraw_withheld_authority_encryption_pubkey
+            ),
             withheld_amount: format!("{}", confidential_transfer_mint.withheld_amount),
         }
     }

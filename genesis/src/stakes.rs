@@ -4,7 +4,7 @@ use {
         address_generator::AddressGenerator,
         unlocks::{UnlockInfo, Unlocks},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::Account,
         clock::Slot,
         genesis_config::GenesisConfig,
@@ -165,7 +165,7 @@ pub fn create_and_add_stakes(
 
 #[cfg(test)]
 mod tests {
-    use {super::*, solana_sdk::rent::Rent};
+    use {super::*, sonoma_sdk::rent::Rent};
 
     fn create_and_check_stakes(
         genesis_config: &mut GenesisConfig,
@@ -216,7 +216,7 @@ mod tests {
     //        print(
     //            "\n\"{}\", // {:?}",
     //            hex,
-    //            Pubkey::try_from(&hex::decode(hex).unwrap()).unwrap()
+    //            Pubkey::new(&hex::decode(hex).unwrap())
     //        );
     //    });
     //    println();

@@ -6,13 +6,13 @@ use {
     rayon::iter::*,
     solana_gossip::{
         cluster_info::{ClusterInfo, Node},
+        contact_info::ContactInfo,
         crds::Cursor,
         gossip_service::GossipService,
-        legacy_contact_info::LegacyContactInfo as ContactInfo,
     },
     solana_perf::packet::Packet,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    sonoma_sdk::{
         hash::Hash,
         pubkey::Pubkey,
         signature::{Keypair, Signer},

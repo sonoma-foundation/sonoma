@@ -2,7 +2,7 @@ use {
     clap::{crate_name, value_t, value_t_or_exit, values_t_or_exit, App, Arg},
     crossbeam_channel::unbounded,
     log::*,
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         input_parsers::{pubkey_of, pubkeys_of, value_of},
         input_validators::{
             is_parsable, is_pubkey, is_pubkey_or_keypair, is_slot, is_url_or_moniker,
@@ -16,7 +16,7 @@ use {
         rpc::{JsonRpcConfig, RpcBigtableConfig},
         rpc_pubsub_service::PubSubConfig,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::AccountSharedData,
         clock::Slot,
         epoch_schedule::{EpochSchedule, MINIMUM_SLOTS_PER_EPOCH},
@@ -555,7 +555,7 @@ fn main() {
 
                     programs_to_load.push(ProgramInfo {
                         program_id: address,
-                        loader: solana_sdk::bpf_loader::id(),
+                        loader: sonoma_sdk::bpf_loader::id(),
                         program_path,
                     });
                 }
@@ -697,7 +697,7 @@ fn main() {
             start_time: std::time::SystemTime::now(),
             validator_exit: genesis.validator_exit.clone(),
             authorized_voter_keypairs: genesis.authorized_voter_keypairs.clone(),
-            post_init: admin_service_post_init,
+            post_init: admin_service_post_init.clone(),
             tower_storage: tower_storage.clone(),
         },
     );
@@ -823,6 +823,12 @@ fn main() {
 
     match genesis.start_with_mint_address(mint_address, socket_addr_space) {
         Ok(test_validator) => {
+            *admin_service_post_init.write().unwrap() =
+                Some(admin_rpc_service::AdminRpcRequestMetadataPostInit {
+                    bank_forks: test_validator.bank_forks(),
+                    cluster_info: test_validator.cluster_info(),
+                    vote_account: test_validator.vote_account_address(),
+                });
             if let Some(dashboard) = dashboard {
                 dashboard.run(Duration::from_millis(250));
             }

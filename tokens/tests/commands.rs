@@ -1,6 +1,6 @@
 use {
     solana_client::rpc_client::RpcClient,
-    solana_sdk::signature::{Keypair, Signer},
+    sonoma_sdk::signature::{Keypair, Signer},
     solana_streamer::socket::SocketAddrSpace,
     solana_test_validator::TestValidator,
     solana_tokens::commands::test_process_distribute_tokens_with_client,

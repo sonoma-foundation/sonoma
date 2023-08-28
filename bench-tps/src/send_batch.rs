@@ -4,7 +4,7 @@ use {
     rayon::prelude::*,
     solana_core::gen_keys::GenKeys,
     solana_measure::measure::Measure,
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         hash::Hash,
         message::Message,

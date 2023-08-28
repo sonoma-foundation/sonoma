@@ -6,7 +6,7 @@ use {
     },
     log::info,
     serde_json::json,
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         input_parsers::pubkey_of,
         input_validators::{is_slot, is_valid_pubkey},
     },
@@ -19,7 +19,7 @@ use {
         blockstore::Blockstore,
         blockstore_options::{AccessType, ShredStorageType},
     },
-    solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
+    sonoma_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
     solana_storage_bigtable::CredentialType,
     solana_transaction_status::{
         BlockEncodingOptions, ConfirmedBlock, EncodeError, TransactionDetails,

@@ -23,8 +23,8 @@ function Developers() {
                 your browser.
               </p>
 
-              <Link to="/getstarted/hello-world" className="button">
-                Get Started
+              <Link to="/getstarted/hello-world">
+                <a className="button">Get Started</a>
               </Link>
             </div>
           </section>
@@ -136,7 +136,7 @@ function Developers() {
               />
 
               <Card
-                to="/api"
+                to="developing/clients/jsonrpc-api"
                 header={{
                   label: "RPC API",
                   translateId: "rpc-api",

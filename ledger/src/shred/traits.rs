@@ -1,16 +1,14 @@
 use {
     crate::shred::{CodingShredHeader, DataShredHeader, Error, ShredCommonHeader},
-    solana_sdk::{clock::Slot, signature::Signature},
+    sonoma_sdk::{clock::Slot, signature::Signature},
 };
 
-pub(super) trait Shred<'a>: Sized {
+pub(super) trait Shred: Sized {
     // Total size of payload including headers, merkle
     // branches (if any), zero paddings, etc.
     const SIZE_OF_PAYLOAD: usize;
     // Size of common and code/data headers.
     const SIZE_OF_HEADERS: usize;
-
-    type SignedData: AsRef<[u8]>;
 
     fn from_payload(shred: Vec<u8>) -> Result<Self, Error>;
     fn common_header(&self) -> &ShredCommonHeader;
@@ -29,14 +27,14 @@ pub(super) trait Shred<'a>: Sized {
     fn erasure_shard_as_slice(&self) -> Result<&[u8], Error>;
 
     // Portion of the payload which is signed.
-    fn signed_data(&'a self) -> Result<Self::SignedData, Error>;
+    fn signed_message(&self) -> &[u8];
 
     // Only for tests.
     fn set_index(&mut self, index: u32);
     fn set_slot(&mut self, slot: Slot);
 }
 
-pub(super) trait ShredData: for<'a> Shred<'a> {
+pub(super) trait ShredData: Shred {
     fn data_header(&self) -> &DataShredHeader;
 
     fn parent(&self) -> Result<Slot, Error> {
@@ -58,7 +56,7 @@ pub(super) trait ShredData: for<'a> Shred<'a> {
     fn data(&self) -> Result<&[u8], Error>;
 }
 
-pub(super) trait ShredCode: for<'a> Shred<'a> {
+pub(super) trait ShredCode: Shred {
     fn coding_header(&self) -> &CodingShredHeader;
 
     fn first_coding_index(&self) -> Option<u32> {

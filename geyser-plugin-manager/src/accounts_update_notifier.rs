@@ -11,7 +11,7 @@ use {
         accounts_update_notifier_interface::AccountsUpdateNotifierInterface,
         append_vec::{StoredAccountMeta, StoredMeta},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::{AccountSharedData, ReadableAccount},
         clock::Slot,
         signature::Signature,

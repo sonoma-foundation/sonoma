@@ -44,18 +44,20 @@ else
       program="solana-$program"
     fi
 
+    if [[ -n $NDEBUG ]]; then
       maybe_release=--release
+    fi
 
     # Prebuild binaries so that CI sanity check timeout doesn't include build time
     if [[ $prebuild ]]; then
       (
         set -x
         # shellcheck disable=SC2086 # Don't want to double quote
-        ./cargo $CARGO_TOOLCHAIN build $maybe_release --bin $program
+        cargo $CARGO_TOOLCHAIN build $maybe_release --bin $program
       )
     fi
 
-    printf "./cargo $CARGO_TOOLCHAIN run $maybe_release  --bin %s %s -- " "$program"
+    printf "cargo $CARGO_TOOLCHAIN run $maybe_release  --bin %s %s -- " "$program"
   }
 fi
 
@@ -65,9 +67,9 @@ solana_validator=$(solana_program validator)
 solana_validator_cuda="$solana_validator --cuda"
 solana_genesis=$(solana_program genesis)
 solana_gossip=$(solana_program gossip)
-solana_keygen="./cargo run --release --bin sonoma-keygen -- "
+sonoma_keygen=$(solana_program keygen)
 solana_ledger_tool=$(solana_program ledger-tool)
-solana_cli="./cargo run --release --bin sonoma -- "
+solana_cli=$(solana_program)
 
 export RUST_BACKTRACE=1
 

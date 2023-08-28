@@ -1,17 +1,7 @@
 ---
 title: "Hello World Quickstart Guide"
 description: 'This "hello world" quickstart guide will demonstrate how to setup, build, and deploy your first Solana program in your browser with Solana Playground.'
-keywords:
-  - playground
-  - solana pg
-  - on chain
-  - rust
-  - native program
-  - tutorial
-  - intro to solana development
-  - blockchain developer
-  - blockchain tutorial
-  - web3 developer
+keywords: "playground, solana pg, on chain, rust, native program, tutorial, intro to solana development, blockchain developer, blockchain tutorial, web3 developer"
 ---
 
 For this "hello world" quickstart guide, we will use [Solana Playground](https://beta.solpg.io), a browser the based IDE, to develop and deploy our Solana program. To use it, you do **NOT** have to install any software on your computer. Simply open Solana Playground in your browser of choice, and you are ready to write and deploy Solana programs.
@@ -44,9 +34,8 @@ Next, import the project into your local workspace by clicking the "**Import**" 
 
 Normally with [local development](./local.md), you will need to create a file system wallet for use with the Solana CLI. But with the Solana Playground, you only need to click a few buttons to create a browser based wallet.
 
-:::caution
-Your _Playground Wallet_ will be saved in your browser's local storage. Clearing your browser cache will remove your saved wallet. When creating a new wallet, you will have the option to save a local copy of your wallet's keypair file.
-:::
+> **Note:**
+> Your _Playground Wallet_ will be saved in your browser's local storage. Clearing your browser cache will remove your saved wallet. When creating a new wallet, you will have the option to save a local copy of your wallet's keypair file.
 
 Click on the red status indicator button at the bottom left of the screen, (optionally) save your wallet's keypair file to your computer for backup, then click "**Continue**".
 
@@ -104,9 +93,8 @@ If you look at the Playground's terminal, you should see your Solana program beg
 
 ![Viewing a successful build of your Rust based program](/img/quickstarts/solana-get-started-successful-build.png)
 
-:::caution
-You may receive _warning_ when your program is compiled due to unused variables. Don't worry, these warning will not affect your build. They are due to our very simple program not using all the variables we declared in the `process_instruction` function.
-:::
+> Note:
+> You may receive _warning_ when your program is compiled due to unused variables. Don't worry, these warning will not affect your build. They are due to our very simple program not using all the variables we declared in the `process_instruction` function.
 
 ### Deploy your program
 
@@ -116,7 +104,6 @@ After each deployment, you will see your Playground Wallet balance change. By de
 
 > Note:
 > If you need more SOL, you can airdrop more by typing airdrop command in the playground terminal:
-
 ```sh
 solana airdrop 2
 ```
@@ -139,9 +126,8 @@ Once you have successfully deployed a Solana program to the blockchain, you will
 
 Like most developers creating dApps and websites, we will interact with our on chain program using JavaScript. Specifically, will use the open source [NPM package](https://www.npmjs.com/package/@solana/web3.js) `@solana/web3.js` to aid in our client application.
 
-:::info
-This web3.js package is an abstraction layer on top of the [JSON RPC API](/api) that reduced the need for rewriting common boilerplate, helping to simplify your client side application code.
-:::
+> **NOTE:**
+> This web3.js package is an abstraction layer on top of the [JSON RPC API](./../developing/clients/jsonrpc-api.md) that reduced the need for rewriting common boilerplate, helping to simplify your client side application code.
 
 ### Initialize client
 
@@ -157,9 +143,8 @@ We have created `client` folder and a default `client.ts`. This is where we will
 
 In playground, there are many utilities that are globally available for us to use without installing or setting up anything. Most important ones for our `hello world` program are `web3` for `@solana/web3.js` and `pg` for Solana Playground utilities.
 
-:::info
-You can go over all of the available globals by pressing `CTRL+SPACE` (or `CMD+SPACE` on macOS) inside the editor.
-:::
+> Note:
+> You can go over all of the available globals by pressing `CTRL+SPACE` (or `CMD+SPACE` on macOS) inside the editor.
 
 ### Call the program
 
@@ -176,7 +161,7 @@ transaction.add(
   new web3.TransactionInstruction({
     keys: [],
     programId: new web3.PublicKey(pg.PROGRAM_ID),
-  }),
+  })
 );
 ```
 
@@ -190,14 +175,13 @@ console.log("Sending transaction...");
 const txHash = await web3.sendAndConfirmTransaction(
   pg.connection,
   transaction,
-  [pg.wallet.keypair],
+  [pg.wallet.keypair]
 );
 console.log("Transaction sent with hash:", txHash);
 ```
 
-:::info
-The first signer in the signers array is the transaction fee payer by default. We are signing with our keypair `pg.wallet.keypair`.
-:::
+> Note:
+> The first signer in the signers array is the transaction fee payer by default. We are signing with our keypair `pg.wallet.keypair`.
 
 ### Run the application
 

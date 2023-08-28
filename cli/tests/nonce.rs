@@ -13,7 +13,7 @@ use {
         rpc_client::RpcClient,
     },
     solana_faucet::faucet::run_local_faucet,
-    solana_sdk::{
+    sonoma_sdk::{
         commitment_config::CommitmentConfig,
         hash::Hash,
         native_token::sol_to_lamports,
@@ -167,7 +167,7 @@ fn full_battery_tests(
     assert_ne!(first_nonce, third_nonce);
 
     // Withdraw from nonce account
-    let payee_pubkey = solana_sdk::pubkey::new_rand();
+    let payee_pubkey = sonoma_sdk::pubkey::new_rand();
     config_payer.signers = authorized_signers;
     config_payer.command = CliCommand::WithdrawFromNonceAccount {
         nonce_account,
@@ -259,7 +259,7 @@ fn test_create_account_with_seed() {
 
     let offline_nonce_authority_signer = keypair_from_seed(&[1u8; 32]).unwrap();
     let online_nonce_creator_signer = keypair_from_seed(&[2u8; 32]).unwrap();
-    let to_address = Pubkey::from([3u8; 32]);
+    let to_address = Pubkey::new(&[3u8; 32]);
 
     // Setup accounts
     let rpc_client =

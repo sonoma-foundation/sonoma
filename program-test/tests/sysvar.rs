@@ -1,6 +1,6 @@
 use {
-    solana_program_test::{processor, ProgramTest},
-    solana_sdk::{
+    sonoma_program_test::{processor, ProgramTest},
+    sonoma_sdk::{
         account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult,
         epoch_schedule::EpochSchedule, instruction::Instruction, msg, pubkey::Pubkey, rent::Rent,
         signature::Signer, sysvar::Sysvar, transaction::Transaction,

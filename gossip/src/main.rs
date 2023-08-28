@@ -5,14 +5,12 @@ use {
         crate_description, crate_name, value_t, value_t_or_exit, App, AppSettings, Arg, ArgMatches,
         SubCommand,
     },
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         input_parsers::keypair_of,
         input_validators::{is_keypair_or_ask_keyword, is_port, is_pubkey},
     },
-    solana_gossip::{
-        gossip_service::discover, legacy_contact_info::LegacyContactInfo as ContactInfo,
-    },
-    solana_sdk::pubkey::Pubkey,
+    solana_gossip::{contact_info::ContactInfo, gossip_service::discover},
+    sonoma_sdk::pubkey::Pubkey,
     solana_streamer::socket::SocketAddrSpace,
     std::{
         error,

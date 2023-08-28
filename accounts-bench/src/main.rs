@@ -15,7 +15,7 @@ use {
         ancestors::Ancestors,
         rent_collector::RentCollector,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         genesis_config::ClusterType, pubkey::Pubkey, sysvar::epoch_schedule::EpochSchedule,
     },
     std::{env, fs, path::PathBuf},
@@ -131,7 +131,7 @@ fn main() {
             let results_store = accounts.accounts_db.update_accounts_hash_with_index_option(
                 false,
                 false,
-                solana_sdk::clock::Slot::default(),
+                sonoma_sdk::clock::Slot::default(),
                 &ancestors,
                 None,
                 false,

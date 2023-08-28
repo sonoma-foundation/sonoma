@@ -16,7 +16,7 @@ use {
         bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable,
         hash::Hash,
         instruction::{CompiledInstruction, Instruction},
-        message::{compiled_keys::CompiledKeys, MessageHeader},
+        message::{CompiledKeys, MessageHeader},
         pubkey::Pubkey,
         sanitize::{Sanitize, SanitizeError},
         short_vec, system_instruction, system_program, sysvar, wasm_bindgen,
@@ -169,19 +169,19 @@ impl Message {
     ///
     /// # Examples
     ///
-    /// This example uses the [`solana_sdk`], [`solana_client`] and [`anyhow`] crates.
+    /// This example uses the [`sonoma_sdk`], [`solana_client`] and [`anyhow`] crates.
     ///
-    /// [`solana_sdk`]: https://docs.rs/solana-sdk
+    /// [`sonoma_sdk`]: https://docs.rs/solana-sdk
     /// [`solana_client`]: https://docs.rs/solana-client
     /// [`anyhow`]: https://docs.rs/anyhow
     ///
     /// ```
-    /// # use solana_program::example_mocks::solana_sdk;
-    /// # use solana_program::example_mocks::solana_client;
+    /// # use sonoma_program::example_mocks::sonoma_sdk;
+    /// # use sonoma_program::example_mocks::solana_client;
     /// use anyhow::Result;
     /// use borsh::{BorshSerialize, BorshDeserialize};
     /// use solana_client::rpc_client::RpcClient;
-    /// use solana_sdk::{
+    /// use sonoma_sdk::{
     ///     instruction::Instruction,
     ///     message::Message,
     ///     pubkey::Pubkey,
@@ -240,19 +240,19 @@ impl Message {
     ///
     /// # Examples
     ///
-    /// This example uses the [`solana_sdk`], [`solana_client`] and [`anyhow`] crates.
+    /// This example uses the [`sonoma_sdk`], [`solana_client`] and [`anyhow`] crates.
     ///
-    /// [`solana_sdk`]: https://docs.rs/solana-sdk
+    /// [`sonoma_sdk`]: https://docs.rs/solana-sdk
     /// [`solana_client`]: https://docs.rs/solana-client
     /// [`anyhow`]: https://docs.rs/anyhow
     ///
     /// ```
-    /// # use solana_program::example_mocks::solana_sdk;
-    /// # use solana_program::example_mocks::solana_client;
+    /// # use sonoma_program::example_mocks::sonoma_sdk;
+    /// # use sonoma_program::example_mocks::solana_client;
     /// use anyhow::Result;
     /// use borsh::{BorshSerialize, BorshDeserialize};
     /// use solana_client::rpc_client::RpcClient;
-    /// use solana_sdk::{
+    /// use sonoma_sdk::{
     ///     instruction::Instruction,
     ///     message::Message,
     ///     pubkey::Pubkey,
@@ -336,19 +336,19 @@ impl Message {
     ///
     /// # Examples
     ///
-    /// This example uses the [`solana_sdk`], [`solana_client`] and [`anyhow`] crates.
+    /// This example uses the [`sonoma_sdk`], [`solana_client`] and [`anyhow`] crates.
     ///
-    /// [`solana_sdk`]: https://docs.rs/solana-sdk
+    /// [`sonoma_sdk`]: https://docs.rs/solana-sdk
     /// [`solana_client`]: https://docs.rs/solana-client
     /// [`anyhow`]: https://docs.rs/anyhow
     ///
     /// ```
-    /// # use solana_program::example_mocks::solana_sdk;
-    /// # use solana_program::example_mocks::solana_client;
+    /// # use sonoma_program::example_mocks::sonoma_sdk;
+    /// # use sonoma_program::example_mocks::solana_client;
     /// use anyhow::Result;
     /// use borsh::{BorshSerialize, BorshDeserialize};
     /// use solana_client::rpc_client::RpcClient;
-    /// use solana_sdk::{
+    /// use sonoma_sdk::{
     ///     hash::Hash,
     ///     instruction::Instruction,
     ///     message::Message,

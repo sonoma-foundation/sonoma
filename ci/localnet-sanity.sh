@@ -175,7 +175,7 @@ startNodes() {
 
       (
         set -x
-        $solana_cli --keypair config/bootstrap-validator/identity.json \
+        $sonoma_cli --keypair config/bootstrap-validator/identity.json \
           --url http://127.0.0.1:8899 genesis-hash
       ) | tee genesis-hash.log
       maybeExpectedGenesisHash="--expected-genesis-hash $(tail -n1 genesis-hash.log)"
@@ -316,7 +316,7 @@ while [[ $iteration -le $iterations ]]; do
   (
     set -x
     client_keypair=/tmp/client-id.json-$$
-    $solana_keygen new --no-passphrase -fso $client_keypair || exit $?
+    $sonoma_keygen new --no-passphrase -fso $client_keypair || exit $?
     $solana_gossip spy -n 127.0.0.1:8001 --num-nodes-exactly $numNodes || exit $?
     rm -rf $client_keypair
   ) || flag_error

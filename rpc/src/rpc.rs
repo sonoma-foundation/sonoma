@@ -31,9 +31,7 @@ use {
     },
     solana_entry::entry::Entry,
     solana_faucet::faucet::request_airdrop_transaction,
-    solana_gossip::{
-        cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo,
-    },
+    solana_gossip::{cluster_info::ClusterInfo, contact_info::ContactInfo},
     solana_ledger::{
         blockstore::{Blockstore, SignatureInfosForAddress},
         blockstore_db::BlockstoreError,
@@ -55,7 +53,7 @@ use {
         snapshot_config::SnapshotConfig,
         snapshot_utils,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::{AccountSharedData, ReadableAccount},
         account_utils::StateMut,
         clock::{Slot, UnixTimestamp, MAX_RECENT_BLOCKHASHES},
@@ -203,7 +201,6 @@ pub struct JsonRpcRequestProcessor {
     max_slots: Arc<MaxSlots>,
     leader_schedule_cache: Arc<LeaderScheduleCache>,
     max_complete_transaction_status_slot: Arc<AtomicU64>,
-    max_complete_rewards_slot: Arc<AtomicU64>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
 }
 impl Metadata for JsonRpcRequestProcessor {}
@@ -310,7 +307,6 @@ impl JsonRpcRequestProcessor {
         max_slots: Arc<MaxSlots>,
         leader_schedule_cache: Arc<LeaderScheduleCache>,
         max_complete_transaction_status_slot: Arc<AtomicU64>,
-        max_complete_rewards_slot: Arc<AtomicU64>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
     ) -> (Self, Receiver<TransactionInfo>) {
         let (sender, receiver) = unbounded();
@@ -332,7 +328,6 @@ impl JsonRpcRequestProcessor {
                 max_slots,
                 leader_schedule_cache,
                 max_complete_transaction_status_slot,
-                max_complete_rewards_slot,
                 prioritization_fee_cache,
             },
             receiver,
@@ -367,7 +362,6 @@ impl JsonRpcRequestProcessor {
             &connection_cache,
             1000,
             1,
-            exit.clone(),
         );
 
         Self {
@@ -399,7 +393,6 @@ impl JsonRpcRequestProcessor {
             max_slots: Arc::new(MaxSlots::default()),
             leader_schedule_cache: Arc::new(LeaderScheduleCache::new_from_bank(bank)),
             max_complete_transaction_status_slot: Arc::new(AtomicU64::default()),
-            max_complete_rewards_slot: Arc::new(AtomicU64::default()),
             prioritization_fee_cache: Arc::new(PrioritizationFeeCache::default()),
         }
     }
@@ -1055,12 +1048,11 @@ impl JsonRpcRequestProcessor {
         Ok(())
     }
 
-    fn check_blockstore_writes_complete(&self, slot: Slot) -> Result<()> {
+    fn check_status_is_complete(&self, slot: Slot) -> Result<()> {
         if slot
             > self
                 .max_complete_transaction_status_slot
                 .load(Ordering::SeqCst)
-            || slot > self.max_complete_rewards_slot.load(Ordering::SeqCst)
         {
             Err(RpcCustomError::BlockStatusNotAvailableYet { slot }.into())
         } else {
@@ -1094,7 +1086,7 @@ impl JsonRpcRequestProcessor {
                     .unwrap()
                     .highest_confirmed_root()
             {
-                self.check_blockstore_writes_complete(slot)?;
+                self.check_status_is_complete(slot)?;
                 let result = self.blockstore.get_rooted_block(slot, true);
                 self.check_blockstore_root(&result, slot)?;
                 let encode_block = |confirmed_block: ConfirmedBlock| -> Result<UiConfirmedBlock> {
@@ -1125,7 +1117,7 @@ impl JsonRpcRequestProcessor {
                 // Check if block is confirmed
                 let confirmed_bank = self.bank(Some(CommitmentConfig::confirmed()));
                 if confirmed_bank.status_cache_ancestors().contains(&slot) {
-                    self.check_blockstore_writes_complete(slot)?;
+                    self.check_status_is_complete(slot)?;
                     let result = self.blockstore.get_complete_block(slot, true);
                     return result
                         .ok()
@@ -1722,7 +1714,7 @@ impl JsonRpcRequestProcessor {
             min_context_slot: config.min_context_slot,
         })?;
         let epoch = config.epoch.unwrap_or_else(|| bank.epoch());
-        if bank.epoch().saturating_sub(epoch) > solana_sdk::stake_history::MAX_ENTRIES as u64 {
+        if bank.epoch().saturating_sub(epoch) > sonoma_sdk::stake_history::MAX_ENTRIES as u64 {
             return Err(Error::invalid_params(format!(
                 "Invalid param: epoch {:?} is too far in the past",
                 epoch
@@ -1765,7 +1757,7 @@ impl JsonRpcRequestProcessor {
             .get_account(&stake_history::id())
             .ok_or_else(Error::internal_error)?;
         let stake_history =
-            solana_sdk::account::from_account::<StakeHistory, _>(&stake_history_account)
+            sonoma_sdk::account::from_account::<StakeHistory, _>(&stake_history_account)
                 .ok_or_else(Error::internal_error)?;
 
         let StakeActivationStatus {
@@ -2390,7 +2382,7 @@ fn get_spl_token_owner_filter(program_id: &Pubkey, filters: &[RpcFilterType]) ->
                 ..
             }) if *offset == SPL_TOKEN_ACCOUNT_OWNER_OFFSET => {
                 if bytes.len() == PUBKEY_BYTES {
-                    owner_key = Pubkey::try_from(&bytes[..]).ok();
+                    owner_key = Some(Pubkey::new(bytes));
                 } else {
                     incorrect_owner_len = Some(bytes.len());
                 }
@@ -2446,7 +2438,7 @@ fn get_spl_token_mint_filter(program_id: &Pubkey, filters: &[RpcFilterType]) -> 
                 ..
             }) if *offset == SPL_TOKEN_ACCOUNT_MINT_OFFSET => {
                 if bytes.len() == PUBKEY_BYTES {
-                    mint = Pubkey::try_from(&bytes[..]).ok();
+                    mint = Some(Pubkey::new(bytes));
                 } else {
                     incorrect_mint_len = Some(bytes.len());
                 }
@@ -2956,7 +2948,7 @@ pub mod rpc_bank {
                 }
 
                 let mut entry = block_production.entry(identity).or_default();
-                if slot_history.check(slot) == solana_sdk::slot_history::Check::Found {
+                if slot_history.check(slot) == sonoma_sdk::slot_history::Check::Found {
                     entry.1 += 1; // Increment blocks_produced
                 }
                 entry.0 += 1; // Increment leader_slots
@@ -3283,7 +3275,7 @@ pub mod rpc_accounts {
 pub mod rpc_full {
     use {
         super::*,
-        solana_sdk::message::{SanitizedVersionedMessage, VersionedMessage},
+        sonoma_sdk::message::{SanitizedVersionedMessage, VersionedMessage},
     };
     #[rpc]
     pub trait Full {
@@ -4544,7 +4536,7 @@ pub fn create_test_transaction_entries(
     let mut signatures = Vec::new();
     // Generate transactions for processing
     // Successful transaction
-    let success_tx = solana_sdk::system_transaction::transfer(
+    let success_tx = sonoma_sdk::system_transaction::transfer(
         mint_keypair,
         &keypair1.pubkey(),
         rent_exempt_amount,
@@ -4553,7 +4545,7 @@ pub fn create_test_transaction_entries(
     signatures.push(success_tx.signatures[0]);
     let entry_1 = solana_entry::entry::next_entry(&blockhash, 1, vec![success_tx]);
     // Failed transaction, InstructionError
-    let ix_error_tx = solana_sdk::system_transaction::transfer(
+    let ix_error_tx = sonoma_sdk::system_transaction::transfer(
         keypair2,
         &keypair3.pubkey(),
         2 * rent_exempt_amount,
@@ -4642,7 +4634,7 @@ pub mod tests {
             rpc_filter::{Memcmp, MemcmpEncodedBytes},
         },
         solana_entry::entry::next_versioned_entry,
-        solana_gossip::socketaddr,
+        solana_gossip::{contact_info::ContactInfo, socketaddr},
         solana_ledger::{
             blockstore_meta::PerfSample,
             blockstore_processor::fill_blockstore_slot_with_ticks,
@@ -4652,7 +4644,7 @@ pub mod tests {
             accounts_background_service::AbsRequestSender, commitment::BlockCommitment,
             inline_spl_token, non_circulating_supply::non_circulating_accounts,
         },
-        solana_sdk::{
+        sonoma_sdk::{
             account::{Account, WritableAccount},
             clock::MAX_RECENT_BLOCKHASHES,
             compute_budget::ComputeBudgetInstruction,
@@ -4772,7 +4764,6 @@ pub mod tests {
             let max_slots = Arc::new(MaxSlots::default());
             // note that this means that slot 0 will always be considered complete
             let max_complete_transaction_status_slot = Arc::new(AtomicU64::new(0));
-            let max_complete_rewards_slot = Arc::new(AtomicU64::new(0));
 
             let meta = JsonRpcRequestProcessor::new(
                 JsonRpcConfig {
@@ -4793,7 +4784,6 @@ pub mod tests {
                 max_slots.clone(),
                 Arc::new(LeaderScheduleCache::new_from_bank(&bank)),
                 max_complete_transaction_status_slot.clone(),
-                max_complete_rewards_slot,
                 Arc::new(PrioritizationFeeCache::default()),
             )
             .0;
@@ -5036,7 +5026,7 @@ pub mod tests {
 
     #[test]
     fn test_rpc_request_processor_new() {
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = sonoma_sdk::pubkey::new_rand();
         let genesis = create_genesis_config(100);
         let bank = Arc::new(Bank::new_for_tests(&genesis.genesis_config));
         bank.transfer(20, &genesis.mint_keypair, &bob_pubkey)
@@ -5192,7 +5182,7 @@ pub mod tests {
 
     #[test]
     fn test_rpc_get_tx_count() {
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = sonoma_sdk::pubkey::new_rand();
         let genesis = create_genesis_config(10);
         let bank = Arc::new(Bank::new_for_tests(&genesis.genesis_config));
         // Add 4 transactions
@@ -5796,7 +5786,7 @@ pub mod tests {
             ref meta, ref io, ..
         } = rpc;
 
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = sonoma_sdk::pubkey::new_rand();
         let mut tx = system_transaction::transfer(
             &rpc.mint_keypair,
             &bob_pubkey,
@@ -5829,7 +5819,7 @@ pub mod tests {
                  ]
             }}"#,
             tx_serialized_encoded,
-            solana_sdk::pubkey::new_rand(),
+            sonoma_sdk::pubkey::new_rand(),
             bob_pubkey,
         );
         let res = io.handle_request_sync(&req, meta.clone());
@@ -6119,7 +6109,7 @@ pub mod tests {
         assert_eq!(None, result.confirmations);
 
         // Test getSignatureStatus request on unprocessed tx
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = sonoma_sdk::pubkey::new_rand();
         let tx = system_transaction::transfer(
             &mint_keypair,
             &bob_pubkey,
@@ -6314,7 +6304,7 @@ pub mod tests {
         let RpcHandler { meta, io, .. } = RpcHandler::start();
 
         // Expect internal error because no faucet is available
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = sonoma_sdk::pubkey::new_rand();
         let req = format!(
             r#"{{"jsonrpc":"2.0","id":1,"method":"requestAirdrop","params":["{}", 50]}}"#,
             bob_pubkey
@@ -6387,7 +6377,6 @@ pub mod tests {
             Arc::new(MaxSlots::default()),
             Arc::new(LeaderScheduleCache::default()),
             Arc::new(AtomicU64::default()),
-            Arc::new(AtomicU64::default()),
             Arc::new(PrioritizationFeeCache::default()),
         );
         let connection_cache = Arc::new(ConnectionCache::default());
@@ -6399,12 +6388,11 @@ pub mod tests {
             &connection_cache,
             1000,
             1,
-            exit,
         );
 
         let mut bad_transaction = system_transaction::transfer(
             &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             42,
             Hash::default(),
         );
@@ -6439,7 +6427,7 @@ pub mod tests {
         );
         let mut bad_transaction = system_transaction::transfer(
             &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             42,
             recent_blockhash,
         );
@@ -6526,7 +6514,7 @@ pub mod tests {
 
     #[test]
     fn test_rpc_verify_pubkey() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         assert_eq!(verify_pubkey(&pubkey.to_string()).unwrap(), pubkey);
         let bad_pubkey = "a1b2c3d4";
         assert_eq!(
@@ -6539,7 +6527,7 @@ pub mod tests {
     fn test_rpc_verify_signature() {
         let tx = system_transaction::transfer(
             &Keypair::new(),
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             20,
             hash(&[0]),
         );
@@ -6660,7 +6648,6 @@ pub mod tests {
             Arc::new(MaxSlots::default()),
             Arc::new(LeaderScheduleCache::default()),
             Arc::new(AtomicU64::default()),
-            Arc::new(AtomicU64::default()),
             Arc::new(PrioritizationFeeCache::default()),
         );
         let connection_cache = Arc::new(ConnectionCache::default());
@@ -6672,7 +6659,6 @@ pub mod tests {
             &connection_cache,
             1000,
             1,
-            exit,
         );
         assert_eq!(
             request_processor.get_block_commitment(0),
@@ -7369,12 +7355,12 @@ pub mod tests {
             let rpc = RpcHandler::start();
             let bank = rpc.working_bank();
             let RpcHandler { io, meta, .. } = rpc;
-            let mint = SplTokenPubkey::new_from_array([2; 32]);
-            let owner = SplTokenPubkey::new_from_array([3; 32]);
-            let delegate = SplTokenPubkey::new_from_array([4; 32]);
-            let token_account_pubkey = solana_sdk::pubkey::new_rand();
-            let token_with_different_mint_pubkey = solana_sdk::pubkey::new_rand();
-            let new_mint = SplTokenPubkey::new_from_array([5; 32]);
+            let mint = SplTokenPubkey::new(&[2; 32]);
+            let owner = SplTokenPubkey::new(&[3; 32]);
+            let delegate = SplTokenPubkey::new(&[4; 32]);
+            let token_account_pubkey = sonoma_sdk::pubkey::new_rand();
+            let token_with_different_mint_pubkey = sonoma_sdk::pubkey::new_rand();
+            let new_mint = SplTokenPubkey::new(&[5; 32]);
             if program_id == inline_spl_token_2022::id() {
                 // Add the token account
                 let account_base = TokenAccount {
@@ -7445,7 +7431,7 @@ pub mod tests {
                 bank.store_account(&Pubkey::from_str(&mint.to_string()).unwrap(), &mint_account);
 
                 // Add another token account with the same owner, delegate, and mint
-                let other_token_account_pubkey = solana_sdk::pubkey::new_rand();
+                let other_token_account_pubkey = sonoma_sdk::pubkey::new_rand();
                 bank.store_account(&other_token_account_pubkey, &token_account);
 
                 // Add another token account with the same owner and delegate but different mint
@@ -7509,7 +7495,7 @@ pub mod tests {
                 bank.store_account(&Pubkey::from_str(&mint.to_string()).unwrap(), &mint_account);
 
                 // Add another token account with the same owner, delegate, and mint
-                let other_token_account_pubkey = solana_sdk::pubkey::new_rand();
+                let other_token_account_pubkey = sonoma_sdk::pubkey::new_rand();
                 bank.store_account(&other_token_account_pubkey, &token_account);
 
                 // Add another token account with the same owner and delegate but different mint
@@ -7552,7 +7538,7 @@ pub mod tests {
             // Test non-existent token account
             let req = format!(
                 r#"{{"jsonrpc":"2.0","id":1,"method":"getTokenAccountBalance","params":["{}"]}}"#,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
             );
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -7578,7 +7564,7 @@ pub mod tests {
             // Test non-existent mint address
             let req = format!(
                 r#"{{"jsonrpc":"2.0","id":1,"method":"getTokenSupply","params":["{}"]}}"#,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
             );
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -7666,7 +7652,7 @@ pub mod tests {
                     "params":["{}", {{"programId": "{}"}}]
                 }}"#,
                 owner,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
             );
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -7680,7 +7666,7 @@ pub mod tests {
                     "params":["{}", {{"mint": "{}"}}]
                 }}"#,
                 owner,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
             );
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -7695,7 +7681,7 @@ pub mod tests {
                     "method":"getTokenAccountsByOwner",
                     "params":["{}", {{"programId": "{}"}}]
                 }}"#,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
                 program_id,
             );
             let res = io.handle_request_sync(&req, meta.clone());
@@ -7748,7 +7734,7 @@ pub mod tests {
                     "params":["{}", {{"programId": "{}"}}]
                 }}"#,
                 delegate,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
             );
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -7762,7 +7748,7 @@ pub mod tests {
                     "params":["{}", {{"mint": "{}"}}]
                 }}"#,
                 delegate,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
             );
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -7777,7 +7763,7 @@ pub mod tests {
                     "method":"getTokenAccountsByDelegate",
                     "params":["{}", {{"programId": "{}"}}]
                 }}"#,
-                solana_sdk::pubkey::new_rand(),
+                sonoma_sdk::pubkey::new_rand(),
                 program_id,
             );
             let res = io.handle_request_sync(&req, meta.clone());
@@ -7825,7 +7811,7 @@ pub mod tests {
                 owner: program_id,
                 ..Account::default()
             });
-            let token_with_smaller_balance = solana_sdk::pubkey::new_rand();
+            let token_with_smaller_balance = sonoma_sdk::pubkey::new_rand();
             bank.store_account(&token_with_smaller_balance, &token_account);
 
             // Test largest token accounts
@@ -7871,10 +7857,10 @@ pub mod tests {
             let bank = rpc.working_bank();
             let RpcHandler { io, meta, .. } = rpc;
 
-            let mint = SplTokenPubkey::new_from_array([2; 32]);
-            let owner = SplTokenPubkey::new_from_array([3; 32]);
-            let delegate = SplTokenPubkey::new_from_array([4; 32]);
-            let token_account_pubkey = solana_sdk::pubkey::new_rand();
+            let mint = SplTokenPubkey::new(&[2; 32]);
+            let owner = SplTokenPubkey::new(&[3; 32]);
+            let delegate = SplTokenPubkey::new(&[4; 32]);
+            let token_account_pubkey = sonoma_sdk::pubkey::new_rand();
             let (program_name, account_size, mint_size) = if program_id
                 == inline_spl_token_2022::id()
             {
@@ -8270,11 +8256,9 @@ pub mod tests {
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
         let mut pending_optimistically_confirmed_banks = HashSet::new();
         let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-        let max_complete_rewards_slot = Arc::new(AtomicU64::default());
         let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
             &exit,
-            max_complete_transaction_status_slot.clone(),
-            max_complete_rewards_slot.clone(),
+            max_complete_transaction_status_slot,
             bank_forks.clone(),
             block_commitment_cache.clone(),
             optimistically_confirmed_bank.clone(),
@@ -8295,8 +8279,7 @@ pub mod tests {
             Arc::new(RwLock::new(LargestAccountsCache::new(30))),
             Arc::new(MaxSlots::default()),
             Arc::new(LeaderScheduleCache::default()),
-            max_complete_transaction_status_slot,
-            max_complete_rewards_slot,
+            Arc::new(AtomicU64::default()),
             Arc::new(PrioritizationFeeCache::default()),
         );
 
@@ -8311,7 +8294,6 @@ pub mod tests {
         let slot: Slot = serde_json::from_value(json["result"].clone()).unwrap();
         assert_eq!(slot, 0);
         let mut highest_confirmed_slot: Slot = 0;
-        let mut highest_root_slot: Slot = 0;
         let mut last_notified_confirmed_slot: Slot = 0;
 
         OptimisticallyConfirmedBankTracker::process_notification(
@@ -8322,7 +8304,6 @@ pub mod tests {
             &mut pending_optimistically_confirmed_banks,
             &mut last_notified_confirmed_slot,
             &mut highest_confirmed_slot,
-            &mut highest_root_slot,
             &None,
         );
         let req =
@@ -8341,7 +8322,6 @@ pub mod tests {
             &mut pending_optimistically_confirmed_banks,
             &mut last_notified_confirmed_slot,
             &mut highest_confirmed_slot,
-            &mut highest_root_slot,
             &None,
         );
         let req =
@@ -8360,7 +8340,6 @@ pub mod tests {
             &mut pending_optimistically_confirmed_banks,
             &mut last_notified_confirmed_slot,
             &mut highest_confirmed_slot,
-            &mut highest_root_slot,
             &None,
         );
         let req =
@@ -8380,7 +8359,6 @@ pub mod tests {
             &mut pending_optimistically_confirmed_banks,
             &mut last_notified_confirmed_slot,
             &mut highest_confirmed_slot,
-            &mut highest_root_slot,
             &None,
         );
         let req =
@@ -8408,7 +8386,7 @@ pub mod tests {
         let tx58 = bs58::encode(&tx_ser).into_string();
         let tx58_len = tx58.len();
         let expect58 = Error::invalid_params(format!(
-            "encoded solana_sdk::transaction::Transaction too large: {} bytes (max: encoded/raw {}/{})",
+            "encoded sonoma_sdk::transaction::Transaction too large: {} bytes (max: encoded/raw {}/{})",
             tx58_len, MAX_BASE58_SIZE, PACKET_DATA_SIZE,
         ));
         assert_eq!(
@@ -8419,7 +8397,7 @@ pub mod tests {
         let tx64 = base64::encode(&tx_ser);
         let tx64_len = tx64.len();
         let expect64 = Error::invalid_params(format!(
-            "encoded solana_sdk::transaction::Transaction too large: {} bytes (max: encoded/raw {}/{})",
+            "encoded sonoma_sdk::transaction::Transaction too large: {} bytes (max: encoded/raw {}/{})",
             tx64_len, MAX_BASE64_SIZE, PACKET_DATA_SIZE,
         ));
         assert_eq!(
@@ -8431,7 +8409,7 @@ pub mod tests {
         let tx_ser = vec![0x00u8; too_big];
         let tx58 = bs58::encode(&tx_ser).into_string();
         let expect = Error::invalid_params(format!(
-            "encoded solana_sdk::transaction::Transaction too large: {} bytes (max: {} bytes)",
+            "encoded sonoma_sdk::transaction::Transaction too large: {} bytes (max: {} bytes)",
             too_big, PACKET_DATA_SIZE
         ));
         assert_eq!(

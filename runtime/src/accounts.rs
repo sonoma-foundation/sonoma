@@ -29,15 +29,14 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     solana_address_lookup_table_program::{error::AddressLookupError, state::AddressLookupTable},
-    solana_sdk::{
+    sonoma_sdk::{
         account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
         account_utils::StateMut,
         bpf_loader_upgradeable::{self, UpgradeableLoaderState},
         clock::{BankId, Slot, INITIAL_RENT_EPOCH},
         feature_set::{
-            self, add_set_compute_unit_price_ix, enable_request_heap_frame_ix,
-            return_none_for_zero_lamport_accounts, use_default_units_in_fee_calculation,
-            FeatureSet,
+            self, add_set_compute_unit_price_ix, return_none_for_zero_lamport_accounts,
+            use_default_units_in_fee_calculation, FeatureSet,
         },
         fee::FeeStructure,
         genesis_config::ClusterType,
@@ -284,7 +283,7 @@ impl Accounts {
                     AccountSharedData::default()
                 } else {
                     #[allow(clippy::collapsible_else_if)]
-                    if solana_sdk::sysvar::instructions::check_id(key) {
+                    if sonoma_sdk::sysvar::instructions::check_id(key) {
                         Self::construct_instructions_account(
                             message,
                             feature_set
@@ -391,7 +390,6 @@ impl Accounts {
                     .iter()
                     .map(|instruction| {
                         self.load_executable_accounts(
-                            feature_set,
                             ancestors,
                             &mut accounts,
                             instruction.program_id_index as usize,
@@ -464,7 +462,6 @@ impl Accounts {
 
     fn load_executable_accounts(
         &self,
-        feature_set: &FeatureSet,
         ancestors: &Ancestors,
         accounts: &mut Vec<TransactionAccount>,
         mut program_account_index: usize,
@@ -487,16 +484,21 @@ impl Accounts {
             }
             depth += 1;
 
-            program_account_index = accounts.len();
-            if let Some((program_account, _)) =
-                self.accounts_db
-                    .load_with_fixed_root(ancestors, &program_id, load_zero_lamports)
-            {
-                accounts.push((program_id, program_account));
-            } else {
-                error_counters.account_not_found += 1;
-                return Err(TransactionError::ProgramAccountNotFound);
-            }
+            program_account_index = match self.accounts_db.load_with_fixed_root(
+                ancestors,
+                &program_id,
+                load_zero_lamports,
+            ) {
+                Some((program_account, _)) => {
+                    let account_index = accounts.len();
+                    accounts.push((program_id, program_account));
+                    account_index
+                }
+                None => {
+                    error_counters.account_not_found += 1;
+                    return Err(TransactionError::ProgramAccountNotFound);
+                }
+            };
             let program = &accounts[program_account_index].1;
             if !program.executable() {
                 error_counters.invalid_program_for_execution += 1;
@@ -504,25 +506,29 @@ impl Accounts {
             }
 
             // Add loader to chain
-            let owner_id = *program.owner();
+            let program_owner = *program.owner();
             account_indices.insert(0, program_account_index);
-            if bpf_loader_upgradeable::check_id(&owner_id) {
+            if bpf_loader_upgradeable::check_id(&program_owner) {
                 // The upgradeable loader requires the derived ProgramData account
                 if let Ok(UpgradeableLoaderState::Program {
                     programdata_address,
                 }) = program.state()
                 {
-                    let programdata_account_index = accounts.len();
-                    if let Some((programdata_account, _)) = self.accounts_db.load_with_fixed_root(
+                    let programdata_account_index = match self.accounts_db.load_with_fixed_root(
                         ancestors,
                         &programdata_address,
                         load_zero_lamports,
                     ) {
-                        accounts.push((programdata_address, programdata_account));
-                    } else {
-                        error_counters.account_not_found += 1;
-                        return Err(TransactionError::ProgramAccountNotFound);
-                    }
+                        Some((programdata_account, _)) => {
+                            let account_index = accounts.len();
+                            accounts.push((programdata_address, programdata_account));
+                            account_index
+                        }
+                        None => {
+                            error_counters.account_not_found += 1;
+                            return Err(TransactionError::ProgramAccountNotFound);
+                        }
+                    };
                     account_indices.insert(0, programdata_account_index);
                 } else {
                     error_counters.invalid_program_for_execution += 1;
@@ -530,30 +536,7 @@ impl Accounts {
                 }
             }
 
-            if feature_set.is_active(&feature_set::disable_builtin_loader_ownership_chains::id()) {
-                if native_loader::check_id(&owner_id) {
-                    return Ok(account_indices);
-                }
-                let owner_account_index = accounts.len();
-                if let Some((owner_account, _)) =
-                    self.accounts_db
-                        .load_with_fixed_root(ancestors, &owner_id, load_zero_lamports)
-                {
-                    if !native_loader::check_id(owner_account.owner())
-                        || !owner_account.executable()
-                    {
-                        error_counters.invalid_program_for_execution += 1;
-                        return Err(TransactionError::InvalidProgramForExecution);
-                    }
-                    accounts.push((owner_id, owner_account));
-                } else {
-                    error_counters.account_not_found += 1;
-                    return Err(TransactionError::ProgramAccountNotFound);
-                }
-                account_indices.insert(0, owner_account_index);
-                return Ok(account_indices);
-            }
-            program_id = owner_id;
+            program_id = program_owner;
         }
         Ok(account_indices)
     }
@@ -588,9 +571,6 @@ impl Accounts {
                             fee_structure,
                             feature_set.is_active(&add_set_compute_unit_price_ix::id()),
                             feature_set.is_active(&use_default_units_in_fee_calculation::id()),
-                            feature_set.is_active(&enable_request_heap_frame_ix::id())
-                                || self.accounts_db.expected_cluster_type()
-                                    != ClusterType::MainnetBeta,
                         )
                     } else {
                         return (Err(TransactionError::BlockhashNotFound), None);
@@ -1430,7 +1410,7 @@ pub mod test_utils {
         slot: Slot,
     ) {
         for t in 0..num {
-            let pubkey = solana_sdk::pubkey::new_rand();
+            let pubkey = sonoma_sdk::pubkey::new_rand();
             let account =
                 AccountSharedData::new((t + 1) as u64, 0, AccountSharedData::default().owner());
             accounts.store_slow_uncached(slot, &pubkey, &account);
@@ -1459,8 +1439,8 @@ mod tests {
         },
         assert_matches::assert_matches,
         solana_address_lookup_table_program::state::LookupTableMeta,
-        solana_program_runtime::executor_cache::Executors,
-        solana_sdk::{
+        sonoma_program_runtime::executor_cache::Executors,
+        sonoma_sdk::{
             account::{AccountSharedData, WritableAccount},
             epoch_schedule::EpochSchedule,
             genesis_config::ClusterType,
@@ -1578,7 +1558,7 @@ mod tests {
     #[test]
     fn test_hold_range_in_memory() {
         let accts = Accounts::default_for_tests();
-        let range = Pubkey::from([0; 32])..=Pubkey::from([0xff; 32]);
+        let range = Pubkey::new(&[0; 32])..=Pubkey::new(&[0xff; 32]);
         accts.hold_range_in_memory(&range, true, &test_thread_pool());
         accts.hold_range_in_memory(&range, false, &test_thread_pool());
         accts.hold_range_in_memory(&range, true, &test_thread_pool());
@@ -1590,7 +1570,7 @@ mod tests {
     #[test]
     fn test_hold_range_in_memory2() {
         let accts = Accounts::default_for_tests();
-        let range = Pubkey::from([0; 32])..=Pubkey::from([0xff; 32]);
+        let range = Pubkey::new(&[0; 32])..=Pubkey::new(&[0xff; 32]);
         let idx = &accts.accounts_db.accounts_index;
         let bins = idx.account_maps.len();
         // use bins * 2 to get the first half of the range within bin 0
@@ -1663,7 +1643,7 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
 
         let account = AccountSharedData::new(1, 0, &Pubkey::default());
         accounts.push((key0, account));
@@ -1717,7 +1697,6 @@ mod tests {
             &FeeStructure::default(),
             true,
             true,
-            true,
         );
         assert_eq!(fee, lamports_per_signature);
 
@@ -1740,7 +1719,7 @@ mod tests {
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
 
-        let account = AccountSharedData::new(1, 1, &solana_sdk::pubkey::new_rand()); // <-- owner is not the system program
+        let account = AccountSharedData::new(1, 1, &sonoma_sdk::pubkey::new_rand()); // <-- owner is not the system program
         accounts.push((key0, account));
 
         let instructions = vec![CompiledInstruction::new(1, &(), vec![0])];
@@ -1850,7 +1829,7 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
 
         let mut account = AccountSharedData::new(1, 0, &Pubkey::default());
         account.set_rent_epoch(1);
@@ -1885,13 +1864,79 @@ mod tests {
     }
 
     #[test]
+    fn test_load_accounts_max_call_depth() {
+        let mut accounts: Vec<TransactionAccount> = Vec::new();
+        let mut error_counters = TransactionErrorMetrics::default();
+
+        let keypair = Keypair::new();
+        let key0 = keypair.pubkey();
+        let key1 = Pubkey::new(&[5u8; 32]);
+        let key2 = Pubkey::new(&[6u8; 32]);
+        let key3 = Pubkey::new(&[7u8; 32]);
+        let key4 = Pubkey::new(&[8u8; 32]);
+        let key5 = Pubkey::new(&[9u8; 32]);
+        let key6 = Pubkey::new(&[10u8; 32]);
+
+        let account = AccountSharedData::new(1, 0, &Pubkey::default());
+        accounts.push((key0, account));
+
+        let mut account = AccountSharedData::new(40, 1, &Pubkey::default());
+        account.set_executable(true);
+        account.set_owner(native_loader::id());
+        accounts.push((key1, account));
+
+        let mut account = AccountSharedData::new(41, 1, &Pubkey::default());
+        account.set_executable(true);
+        account.set_owner(key1);
+        accounts.push((key2, account));
+
+        let mut account = AccountSharedData::new(42, 1, &Pubkey::default());
+        account.set_executable(true);
+        account.set_owner(key2);
+        accounts.push((key3, account));
+
+        let mut account = AccountSharedData::new(43, 1, &Pubkey::default());
+        account.set_executable(true);
+        account.set_owner(key3);
+        accounts.push((key4, account));
+
+        let mut account = AccountSharedData::new(44, 1, &Pubkey::default());
+        account.set_executable(true);
+        account.set_owner(key4);
+        accounts.push((key5, account));
+
+        let mut account = AccountSharedData::new(45, 1, &Pubkey::default());
+        account.set_executable(true);
+        account.set_owner(key5);
+        accounts.push((key6, account));
+
+        let instructions = vec![CompiledInstruction::new(1, &(), vec![0])];
+        let tx = Transaction::new_with_compiled_instructions(
+            &[&keypair],
+            &[],
+            Hash::default(),
+            vec![key6],
+            instructions,
+        );
+
+        let loaded_accounts = load_accounts(tx, &accounts, &mut error_counters);
+
+        assert_eq!(error_counters.call_chain_too_deep, 1);
+        assert_eq!(loaded_accounts.len(), 1);
+        assert_eq!(
+            loaded_accounts[0],
+            (Err(TransactionError::CallChainTooDeep), None,)
+        );
+    }
+
+    #[test]
     fn test_load_accounts_bad_owner() {
         let mut accounts: Vec<TransactionAccount> = Vec::new();
         let mut error_counters = TransactionErrorMetrics::default();
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
 
         let account = AccountSharedData::new(1, 0, &Pubkey::default());
         accounts.push((key0, account));
@@ -1926,7 +1971,7 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
 
         let account = AccountSharedData::new(1, 0, &Pubkey::default());
         accounts.push((key0, account));
@@ -1960,8 +2005,8 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
-        let key2 = Pubkey::from([6u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
+        let key2 = Pubkey::new(&[6u8; 32]);
 
         let mut account = AccountSharedData::new(1, 0, &Pubkey::default());
         account.set_rent_epoch(1);
@@ -2174,21 +2219,21 @@ mod tests {
         );
 
         // Load accounts owned by various programs into AccountsDb
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let account0 = AccountSharedData::new(1, 0, &Pubkey::from([2; 32]));
+        let pubkey0 = sonoma_sdk::pubkey::new_rand();
+        let account0 = AccountSharedData::new(1, 0, &Pubkey::new(&[2; 32]));
         accounts.store_slow_uncached(0, &pubkey0, &account0);
-        let pubkey1 = solana_sdk::pubkey::new_rand();
-        let account1 = AccountSharedData::new(1, 0, &Pubkey::from([2; 32]));
+        let pubkey1 = sonoma_sdk::pubkey::new_rand();
+        let account1 = AccountSharedData::new(1, 0, &Pubkey::new(&[2; 32]));
         accounts.store_slow_uncached(0, &pubkey1, &account1);
-        let pubkey2 = solana_sdk::pubkey::new_rand();
-        let account2 = AccountSharedData::new(1, 0, &Pubkey::from([3; 32]));
+        let pubkey2 = sonoma_sdk::pubkey::new_rand();
+        let account2 = AccountSharedData::new(1, 0, &Pubkey::new(&[3; 32]));
         accounts.store_slow_uncached(0, &pubkey2, &account2);
 
-        let loaded = accounts.load_by_program_slot(0, Some(&Pubkey::from([2; 32])));
+        let loaded = accounts.load_by_program_slot(0, Some(&Pubkey::new(&[2; 32])));
         assert_eq!(loaded.len(), 2);
-        let loaded = accounts.load_by_program_slot(0, Some(&Pubkey::from([3; 32])));
+        let loaded = accounts.load_by_program_slot(0, Some(&Pubkey::new(&[3; 32])));
         assert_eq!(loaded, vec![(pubkey2, account2)]);
-        let loaded = accounts.load_by_program_slot(0, Some(&Pubkey::from([4; 32])));
+        let loaded = accounts.load_by_program_slot(0, Some(&Pubkey::new(&[4; 32])));
         assert_eq!(loaded, vec![]);
     }
 
@@ -2199,8 +2244,8 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
-        let key2 = Pubkey::from([6u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
+        let key2 = Pubkey::new(&[6u8; 32]);
 
         let mut account = AccountSharedData::new(1, 0, &Pubkey::default());
         account.set_rent_epoch(1);
@@ -2255,10 +2300,10 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
-        let key2 = Pubkey::from([6u8; 32]);
-        let programdata_key1 = Pubkey::from([7u8; 32]);
-        let programdata_key2 = Pubkey::from([8u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
+        let key2 = Pubkey::new(&[6u8; 32]);
+        let programdata_key1 = Pubkey::new(&[7u8; 32]);
+        let programdata_key2 = Pubkey::new(&[8u8; 32]);
 
         let mut account = AccountSharedData::new(1, 0, &Pubkey::default());
         account.set_rent_epoch(1);
@@ -2352,8 +2397,8 @@ mod tests {
 
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
-        let key1 = Pubkey::from([5u8; 32]);
-        let key2 = Pubkey::from([6u8; 32]);
+        let key1 = Pubkey::new(&[5u8; 32]);
+        let key2 = Pubkey::new(&[6u8; 32]);
 
         let mut account = AccountSharedData::new(1, 0, &Pubkey::default());
         account.set_rent_epoch(1);
@@ -2447,7 +2492,6 @@ mod tests {
 
         assert_eq!(
             accounts.load_executable_accounts(
-                &FeatureSet::default(),
                 &ancestors,
                 &mut vec![(keypair.pubkey(), account)],
                 0,
@@ -2925,7 +2969,7 @@ mod tests {
     fn test_collect_accounts_to_store() {
         let keypair0 = Keypair::new();
         let keypair1 = Keypair::new();
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = sonoma_sdk::pubkey::new_rand();
         let account0 = AccountSharedData::new(1, 0, &Pubkey::default());
         let account1 = AccountSharedData::new(2, 0, &Pubkey::default());
         let account2 = AccountSharedData::new(3, 0, &Pubkey::default());
@@ -3054,7 +3098,7 @@ mod tests {
         let zero_account = AccountSharedData::new(0, 0, AccountSharedData::default().owner());
         info!("storing..");
         for i in 0..2_000 {
-            let pubkey = solana_sdk::pubkey::new_rand();
+            let pubkey = sonoma_sdk::pubkey::new_rand();
             let account =
                 AccountSharedData::new((i + 1) as u64, 0, AccountSharedData::default().owner());
             accounts.store_slow_uncached(i, &pubkey, &account);
@@ -3105,12 +3149,12 @@ mod tests {
             AccountShrinkThreshold::default(),
         );
 
-        let instructions_key = solana_sdk::sysvar::instructions::id();
+        let instructions_key = sonoma_sdk::sysvar::instructions::id();
         let keypair = Keypair::new();
         let instructions = vec![CompiledInstruction::new(1, &(), vec![0, 1])];
         let tx = Transaction::new_with_compiled_instructions(
             &[&keypair],
-            &[solana_sdk::pubkey::new_rand(), instructions_key],
+            &[sonoma_sdk::pubkey::new_rand(), instructions_key],
             Hash::default(),
             vec![native_loader::id()],
             instructions,
@@ -3291,7 +3335,7 @@ mod tests {
         let expect_account = post_account.clone();
         // Wrong key
         assert!(run_prepare_if_nonce_account_test(
-            &Pubkey::from([1u8; 32]),
+            &Pubkey::new(&[1u8; 32]),
             &mut post_account,
             &Ok(()),
             false,

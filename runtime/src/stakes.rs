@@ -12,7 +12,7 @@ use {
     num_derive::ToPrimitive,
     num_traits::ToPrimitive,
     rayon::{prelude::*, ThreadPool},
-    solana_sdk::{
+    sonoma_sdk::{
         account::{AccountSharedData, ReadableAccount},
         clock::{Epoch, Slot},
         pubkey::Pubkey,
@@ -235,9 +235,18 @@ impl Stakes<StakeAccount> {
                 None => return Err(Error::VoteAccountNotFound(*pubkey)),
                 Some(account) => account,
             };
+            // Ignoring rent_epoch until the feature for
+            // preserve_rent_epoch_for_rent_exempt_accounts is activated.
             let vote_account = vote_account.account();
-            if vote_account != &account {
-                error!("vote account mismatch: {pubkey}, {vote_account:?}, {account:?}");
+            if vote_account.lamports() != account.lamports()
+                || vote_account.owner() != account.owner()
+                || vote_account.executable() != account.executable()
+                || vote_account.data() != account.data()
+            {
+                error!(
+                    "vote account mismatch: {}, {:?}, {:?}",
+                    pubkey, vote_account, account
+                );
                 return Err(Error::VoteAccountMismatch(*pubkey));
             }
         }
@@ -257,7 +266,7 @@ impl Stakes<StakeAccount> {
             if VoteState::is_correct_size_and_initialized(account.data())
                 && VoteAccount::try_from(account.clone()).is_ok()
             {
-                error!("vote account not cached: {pubkey}, {account:?}");
+                error!("vote account not cached: {}, {:?}", pubkey, account);
                 return Err(Error::VoteAccountNotCached(pubkey));
             }
         }
@@ -509,7 +518,7 @@ pub(crate) mod tests {
         super::*,
         rand::Rng,
         rayon::ThreadPoolBuilder,
-        solana_sdk::{account::WritableAccount, pubkey::Pubkey, rent::Rent, stake},
+        sonoma_sdk::{account::WritableAccount, pubkey::Pubkey, rent::Rent, stake},
         solana_stake_program::stake_state,
         solana_vote_program::vote_state::{self, VoteState, VoteStateVersions},
     };
@@ -518,9 +527,9 @@ pub(crate) mod tests {
     pub(crate) fn create_staked_node_accounts(
         stake: u64,
     ) -> ((Pubkey, AccountSharedData), (Pubkey, AccountSharedData)) {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = sonoma_sdk::pubkey::new_rand();
         let vote_account =
-            vote_state::create_account(&vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&vote_pubkey, &sonoma_sdk::pubkey::new_rand(), 0, 1);
         (
             (vote_pubkey, vote_account),
             create_stake_account(stake, &vote_pubkey),
@@ -532,13 +541,13 @@ pub(crate) mod tests {
         stake: u64,
         vote_pubkey: &Pubkey,
     ) -> (Pubkey, AccountSharedData) {
-        let stake_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_pubkey = sonoma_sdk::pubkey::new_rand();
         (
             stake_pubkey,
             stake_state::create_account(
                 &stake_pubkey,
                 vote_pubkey,
-                &vote_state::create_account(vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1),
+                &vote_state::create_account(vote_pubkey, &sonoma_sdk::pubkey::new_rand(), 0, 1),
                 &Rent::free(),
                 stake,
             ),
@@ -549,9 +558,9 @@ pub(crate) mod tests {
         stake: u64,
         epoch: Epoch,
     ) -> ((Pubkey, AccountSharedData), (Pubkey, AccountSharedData)) {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = sonoma_sdk::pubkey::new_rand();
         let vote_account =
-            vote_state::create_account(&vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&vote_pubkey, &sonoma_sdk::pubkey::new_rand(), 0, 1);
         (
             (vote_pubkey, vote_account),
             create_warming_stake_account(stake, epoch, &vote_pubkey),
@@ -564,13 +573,13 @@ pub(crate) mod tests {
         epoch: Epoch,
         vote_pubkey: &Pubkey,
     ) -> (Pubkey, AccountSharedData) {
-        let stake_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_pubkey = sonoma_sdk::pubkey::new_rand();
         (
             stake_pubkey,
             stake_state::create_account_with_activation_epoch(
                 &stake_pubkey,
                 vote_pubkey,
-                &vote_state::create_account(vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1),
+                &vote_state::create_account(vote_pubkey, &sonoma_sdk::pubkey::new_rand(), 0, 1),
                 &Rent::free(),
                 stake,
                 epoch,
@@ -946,16 +955,16 @@ pub(crate) mod tests {
             ..Stakes::default()
         });
         for _ in 0..rng.gen_range(5usize, 10) {
-            let vote_pubkey = solana_sdk::pubkey::new_rand();
+            let vote_pubkey = sonoma_sdk::pubkey::new_rand();
             let vote_account = vote_state::create_account(
                 &vote_pubkey,
-                &solana_sdk::pubkey::new_rand(), // node_pubkey
+                &sonoma_sdk::pubkey::new_rand(), // node_pubkey
                 rng.gen_range(0, 101),           // commission
                 rng.gen_range(0, 1_000_000),     // lamports
             );
             stakes_cache.check_and_store(&vote_pubkey, &vote_account);
             for _ in 0..rng.gen_range(10usize, 20) {
-                let stake_pubkey = solana_sdk::pubkey::new_rand();
+                let stake_pubkey = sonoma_sdk::pubkey::new_rand();
                 let rent = Rent::with_slots_per_epoch(rng.gen());
                 let stake_account = stake_state::create_account(
                     &stake_pubkey, // authorized

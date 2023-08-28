@@ -11,7 +11,7 @@ use {
     log::*,
     solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
     solana_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter},
-    solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
+    sonoma_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
     sonoma_cli_output::{
         CliProgram, CliProgramAccountType, CliProgramAuthority, CliProgramBuffer, CliProgramId,
         CliUpgradeableBuffer, CliUpgradeableBuffers, CliUpgradeableProgram,
@@ -25,14 +25,14 @@ use {
         rpc_filter::{Memcmp, RpcFilterType},
         tpu_client::{TpuClient, TpuClientConfig},
     },
-    solana_program_runtime::invoke_context::InvokeContext,
+    sonoma_program_runtime::invoke_context::InvokeContext,
     solana_rbpf::{
         elf::Executable,
         verifier::RequisiteVerifier,
         vm::{Config, VerifiedExecutable},
     },
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    sonoma_remote_wallet::remote_wallet::RemoteWalletManager,
+    sonoma_sdk::{
         account::Account,
         account_utils::StateMut,
         bpf_loader, bpf_loader_deprecated,
@@ -2319,7 +2319,7 @@ mod tests {
         },
         serde_json::Value,
         sonoma_cli_output::OutputFormat,
-        solana_sdk::signature::write_keypair_file,
+        sonoma_sdk::signature::write_keypair_file,
     };
 
     fn make_tmp_path(name: &str) -> String {

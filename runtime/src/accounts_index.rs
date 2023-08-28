@@ -4,7 +4,7 @@ use {
         ancestors::Ancestors,
         bucket_map_holder::{Age, BucketMapHolder},
         contains::Contains,
-        in_mem_accounts_index::{InMemAccountsIndex, InsertNewEntryResults},
+        in_mem_accounts_index::InMemAccountsIndex,
         inline_spl_token::{self, GenericTokenAccount},
         inline_spl_token_2022,
         pubkey_bins::PubkeyBinCalculator24,
@@ -21,7 +21,7 @@ use {
         ThreadPool,
     },
     solana_measure::measure::Measure,
-    solana_sdk::{
+    sonoma_sdk::{
         account::ReadableAccount,
         clock::{BankId, Slot},
         pubkey::Pubkey,
@@ -1566,7 +1566,7 @@ impl<T: IndexValue> AccountsIndex<T> {
                 (pubkey_bin, Vec::with_capacity(expected_items_per_bin))
             })
             .collect::<Vec<_>>();
-        let mut dirty_pubkeys = items
+        let dirty_pubkeys = items
             .filter_map(|(pubkey, account_info)| {
                 let pubkey_bin = self.bin_calculator.bin_from_pubkey(&pubkey);
                 let binned_index = (pubkey_bin + random_offset) % bins;
@@ -1597,13 +1597,7 @@ impl<T: IndexValue> AccountsIndex<T> {
                         &self.storage.storage,
                         use_disk,
                     );
-                    match r_account_maps.insert_new_entry_if_missing_with_lock(pubkey, new_entry) {
-                        InsertNewEntryResults::DidNotExist => {}
-                        InsertNewEntryResults::ExistedNewEntryZeroLamports => {}
-                        InsertNewEntryResults::ExistedNewEntryNonZeroLamports => {
-                            dirty_pubkeys.push(pubkey);
-                        }
-                    }
+                    r_account_maps.insert_new_entry_if_missing_with_lock(pubkey, new_entry);
                 });
             }
             insert_time.stop();
@@ -1994,7 +1988,7 @@ pub mod tests {
     use {
         super::*,
         crate::inline_spl_token::*,
-        solana_sdk::{
+        sonoma_sdk::{
             account::{AccountSharedData, WritableAccount},
             pubkey::PUBKEY_BYTES,
             signature::{Keypair, Signer},
@@ -2901,7 +2895,7 @@ pub mod tests {
         let root_slot = 0;
 
         let mut pubkeys: Vec<Pubkey> = std::iter::repeat_with(|| {
-            let new_pubkey = solana_sdk::pubkey::new_rand();
+            let new_pubkey = sonoma_sdk::pubkey::new_rand();
             index.upsert(
                 root_slot,
                 root_slot,
@@ -3065,7 +3059,7 @@ pub mod tests {
         index.upsert(
             0,
             0,
-            &solana_sdk::pubkey::new_rand(),
+            &sonoma_sdk::pubkey::new_rand(),
             &AccountSharedData::default(),
             &AccountSecondaryIndexes::default(),
             true,
@@ -3931,8 +3925,8 @@ pub mod tests {
         );
         assert_eq!((0, usize::MAX), iter.bin_start_and_range());
 
-        let key_0 = Pubkey::from([0; 32]);
-        let key_ff = Pubkey::from([0xff; 32]);
+        let key_0 = Pubkey::new(&[0; 32]);
+        let key_ff = Pubkey::new(&[0xff; 32]);
 
         let iter = AccountsIndexIterator::new(
             &index,
@@ -4062,8 +4056,8 @@ pub mod tests {
     fn test_clean_rooted_entries_return() {
         solana_logger::setup();
         let value = true;
-        let key = solana_sdk::pubkey::new_rand();
-        let key_unknown = solana_sdk::pubkey::new_rand();
+        let key = sonoma_sdk::pubkey::new_rand();
+        let key_unknown = sonoma_sdk::pubkey::new_rand();
         let index = AccountsIndex::<bool>::default_for_tests();
         let slot1 = 1;
 
@@ -4164,7 +4158,7 @@ pub mod tests {
 
     #[test]
     fn test_handle_dead_keys_return() {
-        let key = solana_sdk::pubkey::new_rand();
+        let key = sonoma_sdk::pubkey::new_rand();
         let index = AccountsIndex::<bool>::default_for_tests();
 
         assert_eq!(
@@ -4185,7 +4179,7 @@ pub mod tests {
         assert_eq!(iter.start_bin(), 0); // no range, so 0
         assert_eq!(iter.end_bin_inclusive(), usize::MAX); // no range, so max
 
-        let key = Pubkey::from([0; 32]);
+        let key = Pubkey::new(&[0; 32]);
         let iter = AccountsIndexIterator::new(
             &index,
             Some(&RangeInclusive::new(key, key)),
@@ -4208,7 +4202,7 @@ pub mod tests {
         assert_eq!(iter.start_bin(), 0); // start at pubkey 0, so 0
         assert_eq!(iter.end_bin_inclusive(), 0); // end at pubkey 0, so 0
 
-        let key = Pubkey::from([0xff; 32]);
+        let key = Pubkey::new(&[0xff; 32]);
         let iter = AccountsIndexIterator::new(
             &index,
             Some(&RangeInclusive::new(key, key)),

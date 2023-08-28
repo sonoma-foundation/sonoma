@@ -34,8 +34,7 @@ impl Pubkey {
         if let Some(base58_str) = value.as_string() {
             base58_str.parse::<Pubkey>().map_err(display_to_jsvalue)
         } else if let Some(uint8_array) = value.dyn_ref::<Uint8Array>() {
-            Pubkey::try_from(uint8_array.to_vec())
-                .map_err(|err| JsValue::from(format!("Invalid Uint8Array pubkey: {err:?}")))
+            Ok(Pubkey::new(&uint8_array.to_vec()))
         } else if let Some(array) = value.dyn_ref::<Array>() {
             let mut bytes = vec![];
             let iterator = js_sys::try_iter(&array.values())?.expect("array to be iterable");
@@ -50,8 +49,7 @@ impl Pubkey {
                 }
                 return Err(format!("Invalid array argument: {:?}", x).into());
             }
-            Pubkey::try_from(bytes)
-                .map_err(|err| JsValue::from(format!("Invalid Array pubkey: {err:?}")))
+            Ok(Pubkey::new(&bytes))
         } else if value.is_undefined() {
             Ok(Pubkey::default())
         } else {

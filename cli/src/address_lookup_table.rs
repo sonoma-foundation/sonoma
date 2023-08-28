@@ -8,11 +8,11 @@ use {
         },
         state::AddressLookupTable,
     },
-    solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
+    sonoma_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
     sonoma_cli_output::{CliAddressLookupTable, CliAddressLookupTableCreated, CliSignature},
     solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig},
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    sonoma_remote_wallet::remote_wallet::RemoteWalletManager,
+    sonoma_sdk::{
         account::from_account, clock::Clock, commitment_config::CommitmentConfig, message::Message,
         pubkey::Pubkey, sysvar, transaction::Transaction,
     },

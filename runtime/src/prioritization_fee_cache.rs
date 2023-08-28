@@ -7,7 +7,7 @@ use {
     log::*,
     lru::LruCache,
     solana_measure::measure,
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot, pubkey::Pubkey, saturating_add_assign, transaction::SanitizedTransaction,
     },
     std::{
@@ -213,13 +213,6 @@ impl PrioritizationFeeCache {
                     if priority_details.is_none() || account_locks.is_err() {
                         continue;
                     }
-                    let priority_details = priority_details.unwrap();
-
-                    // filter out any transaction that requests zero compute_unit_limit
-                    // since its priority fee amount is not instructive
-                    if priority_details.compute_unit_limit == 0 {
-                        continue;
-                    }
 
                     let writable_accounts = Arc::new(
                         account_locks
@@ -233,7 +226,7 @@ impl PrioritizationFeeCache {
                     self.sender
                         .send(CacheServiceUpdate::TransactionUpdate {
                             slot: bank.slot(),
-                            transaction_fee: priority_details.priority,
+                            transaction_fee: priority_details.unwrap().priority,
                             writable_accounts,
                         })
                         .unwrap_or_else(|err| {
@@ -390,7 +383,7 @@ mod tests {
             bank_forks::BankForks,
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
         },
-        solana_sdk::{
+        sonoma_sdk::{
             compute_budget::ComputeBudgetInstruction,
             message::Message,
             pubkey::Pubkey,
@@ -558,7 +551,7 @@ mod tests {
         let bank0 = Bank::new_for_benches(&genesis_config);
         let bank_forks = BankForks::new(bank0);
         let bank = bank_forks.working_bank();
-        let collector = solana_sdk::pubkey::new_rand();
+        let collector = sonoma_sdk::pubkey::new_rand();
         let bank1 = Arc::new(Bank::new_from_parent(&bank, &collector, 1));
         let bank2 = Arc::new(Bank::new_from_parent(&bank, &collector, 2));
         let bank3 = Arc::new(Bank::new_from_parent(&bank, &collector, 3));

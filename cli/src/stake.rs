@@ -11,7 +11,7 @@ use {
         spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
     },
     clap::{value_t, App, Arg, ArgGroup, ArgMatches, SubCommand},
-    solana_clap_utils::{
+    sonoma_clap_utils::{
         compute_unit_price::{compute_unit_price_arg, COMPUTE_UNIT_PRICE_ARG},
         fee_payer::{fee_payer_arg, FEE_PAYER_ARG},
         input_parsers::*,
@@ -31,8 +31,8 @@ use {
         blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
         rpc_request::DELINQUENT_VALIDATOR_SLOT_DISTANCE, rpc_response::RpcInflationReward,
     },
-    solana_remote_wallet::remote_wallet::RemoteWalletManager,
-    solana_sdk::{
+    sonoma_remote_wallet::remote_wallet::RemoteWalletManager,
+    sonoma_sdk::{
         account::from_account,
         account_utils::StateMut,
         clock::{Clock, UnixTimestamp, SECONDS_PER_DAY},
@@ -390,7 +390,6 @@ impl StakeSubCommands for App<'_, '_> {
                         .value_name("KEYPAIR")
                         .takes_value(true)
                         .validator(is_valid_signer)
-                        .required_unless("new_withdraw_authority")
                         .help("New authorized staker")
                 )
                 .arg(
@@ -399,7 +398,6 @@ impl StakeSubCommands for App<'_, '_> {
                         .value_name("KEYPAIR")
                         .takes_value(true)
                         .validator(is_valid_signer)
-                        .required_unless("new_stake_authority")
                         .help("New authorized withdrawer")
                 )
                 .arg(stake_authority_arg())
@@ -829,12 +827,9 @@ pub fn parse_stake_delegate_stake(
         signer_of(matches, NONCE_AUTHORITY_ARG.name, wallet_manager)?;
     let (fee_payer, fee_payer_pubkey) = signer_of(matches, FEE_PAYER_ARG.name, wallet_manager)?;
 
-    let mut bulk_signers = vec![stake_authority, fee_payer];
+    let mut bulk_signers = vec![stake_authority, fee_payer, redelegation_stake_account];
     if nonce_account.is_some() {
         bulk_signers.push(nonce_authority);
-    }
-    if redelegation_stake_account.is_some() {
-        bulk_signers.push(redelegation_stake_account);
     }
     let signer_info =
         default_signer.generate_unique_signers(bulk_signers, matches, wallet_manager)?;
@@ -853,8 +848,7 @@ pub fn parse_stake_delegate_stake(
             nonce_authority: signer_info.index_of(nonce_authority_pubkey).unwrap(),
             memo,
             fee_payer: signer_info.index_of(fee_payer_pubkey).unwrap(),
-            redelegation_stake_account: redelegation_stake_account_pubkey
-                .and_then(|_| signer_info.index_of(redelegation_stake_account_pubkey)),
+            redelegation_stake_account_pubkey,
             compute_unit_price,
         },
         signers: signer_info.signers,
@@ -948,11 +942,6 @@ pub fn parse_stake_authorize(
         default_signer.generate_unique_signers(bulk_signers, matches, wallet_manager)?;
     let compute_unit_price = value_of(matches, COMPUTE_UNIT_PRICE_ARG.name);
 
-    if new_authorizations.is_empty() {
-        return Err(CliError::BadParameter(
-            "New authorization list must include at least one authority".to_string(),
-        ));
-    }
     let new_authorizations = new_authorizations
         .into_iter()
         .map(
@@ -2518,26 +2507,25 @@ pub fn process_delegate_stake(
     nonce_authority: SignerIndex,
     memo: Option<&String>,
     fee_payer: SignerIndex,
-    redelegation_stake_account: Option<SignerIndex>,
+    redelegation_stake_account_pubkey: Option<&Pubkey>,
     compute_unit_price: Option<&u64>,
 ) -> ProcessResult {
     check_unique_pubkeys(
         (&config.signers[0].pubkey(), "cli keypair".to_string()),
         (stake_account_pubkey, "stake_account_pubkey".to_string()),
     )?;
-    let redelegation_stake_account = redelegation_stake_account.map(|index| config.signers[index]);
-    if let Some(redelegation_stake_account) = &redelegation_stake_account {
+    if let Some(redelegation_stake_account_pubkey) = &redelegation_stake_account_pubkey {
         check_unique_pubkeys(
             (stake_account_pubkey, "stake_account_pubkey".to_string()),
             (
-                &redelegation_stake_account.pubkey(),
+                redelegation_stake_account_pubkey,
                 "redelegation_stake_account".to_string(),
             ),
         )?;
         check_unique_pubkeys(
             (&config.signers[0].pubkey(), "cli keypair".to_string()),
             (
-                &redelegation_stake_account.pubkey(),
+                redelegation_stake_account_pubkey,
                 "redelegation_stake_account".to_string(),
             ),
         )?;
@@ -2594,12 +2582,12 @@ pub fn process_delegate_stake(
 
     let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
-    let ixs = if let Some(redelegation_stake_account) = &redelegation_stake_account {
+    let ixs = if let Some(redelegation_stake_account_pubkey) = &redelegation_stake_account_pubkey {
         stake_instruction::redelegate(
             stake_account_pubkey,
             &stake_authority.pubkey(),
             vote_account_pubkey,
-            &redelegation_stake_account.pubkey(),
+            redelegation_stake_account_pubkey,
         )
     } else {
         vec![stake_instruction::delegate_stake(
@@ -2684,7 +2672,7 @@ mod tests {
         super::*,
         crate::{clap_app::get_clap_app, cli::parse_command},
         solana_client::blockhash_query,
-        solana_sdk::{
+        sonoma_sdk::{
             hash::Hash,
             signature::{
                 keypair_from_seed, read_keypair_file, write_keypair, Keypair, Presigner, Signer,
@@ -2719,9 +2707,9 @@ mod tests {
 
         // stake-authorize subcommand
         let stake_account_string = stake_account_pubkey.to_string();
-        let new_stake_authority = Pubkey::from([1u8; 32]);
+        let new_stake_authority = Pubkey::new(&[1u8; 32]);
         let new_stake_string = new_stake_authority.to_string();
-        let new_withdraw_authority = Pubkey::from([2u8; 32]);
+        let new_withdraw_authority = Pubkey::new(&[2u8; 32]);
         let new_withdraw_string = new_withdraw_authority.to_string();
         let test_stake_authorize = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3570,7 +3558,7 @@ mod tests {
         let pubkey2 = keypair2.pubkey();
         let sig2 = keypair.sign_message(&[0u8]);
         let signer2 = format!("{}={}", keypair2.pubkey(), sig2);
-        let nonce_account = Pubkey::from([1u8; 32]);
+        let nonce_account = Pubkey::new(&[1u8; 32]);
         let test_authorize = test_commands.clone().get_matches_from(vec![
             "test",
             "stake-authorize",
@@ -3802,9 +3790,9 @@ mod tests {
         );
 
         // Test CreateStakeAccount SubCommand
-        let custodian = solana_sdk::pubkey::new_rand();
+        let custodian = sonoma_sdk::pubkey::new_rand();
         let custodian_string = format!("{}", custodian);
-        let authorized = solana_sdk::pubkey::new_rand();
+        let authorized = sonoma_sdk::pubkey::new_rand();
         let authorized_string = format!("{}", authorized);
         let test_create_stake_account = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3947,7 +3935,7 @@ mod tests {
         assert!(parse_command(&test_create_stake_account, &default_signer, &mut None).is_err());
 
         // CreateStakeAccount offline and nonce
-        let nonce_account = Pubkey::from([1u8; 32]);
+        let nonce_account = Pubkey::new(&[1u8; 32]);
         let nonce_account_string = nonce_account.to_string();
         let offline = keypair_from_seed(&[2u8; 32]).unwrap();
         let offline_pubkey = offline.pubkey();
@@ -4007,7 +3995,7 @@ mod tests {
         );
 
         // Test DelegateStake Subcommand
-        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_account_pubkey = sonoma_sdk::pubkey::new_rand();
         let vote_account_string = vote_account_pubkey.to_string();
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -4030,7 +4018,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 0,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
@@ -4038,7 +4026,7 @@ mod tests {
         );
 
         // Test DelegateStake Subcommand w/ authority
-        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_account_pubkey = sonoma_sdk::pubkey::new_rand();
         let vote_account_string = vote_account_pubkey.to_string();
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -4063,7 +4051,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 0,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![
@@ -4098,7 +4086,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 0,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
@@ -4134,7 +4122,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 0,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
@@ -4165,7 +4153,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 0,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
@@ -4173,7 +4161,7 @@ mod tests {
         );
 
         // Test Delegate Subcommand w/ absent fee payer
-        let key1 = solana_sdk::pubkey::new_rand();
+        let key1 = sonoma_sdk::pubkey::new_rand();
         let sig1 = Keypair::new().sign_message(&[0u8]);
         let signer1 = format!("{}={}", key1, sig1);
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
@@ -4206,7 +4194,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 1,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![
@@ -4217,7 +4205,7 @@ mod tests {
         );
 
         // Test Delegate Subcommand w/ absent fee payer and absent nonce authority
-        let key2 = solana_sdk::pubkey::new_rand();
+        let key2 = sonoma_sdk::pubkey::new_rand();
         let sig2 = Keypair::new().sign_message(&[0u8]);
         let signer2 = format!("{}={}", key2, sig2);
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
@@ -4256,7 +4244,7 @@ mod tests {
                     nonce_authority: 2,
                     memo: None,
                     fee_payer: 1,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![
@@ -4294,7 +4282,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 1,
-                    redelegation_stake_account: None,
+                    redelegation_stake_account_pubkey: None,
                     compute_unit_price: None,
                 },
                 signers: vec![
@@ -4314,6 +4302,7 @@ mod tests {
             redelegation_stake_account_tmp_file.as_file_mut(),
         )
         .unwrap();
+        let redelegation_stake_account_pubkey = redelegation_stake_account_keypair.pubkey();
 
         let test_redelegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -4337,7 +4326,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     fee_payer: 0,
-                    redelegation_stake_account: Some(1),
+                    redelegation_stake_account_pubkey: Some(redelegation_stake_account_pubkey),
                     compute_unit_price: None,
                 },
                 signers: vec![
@@ -4696,7 +4685,7 @@ mod tests {
         );
 
         // Test Deactivate Subcommand w/ absent fee payer
-        let key1 = solana_sdk::pubkey::new_rand();
+        let key1 = sonoma_sdk::pubkey::new_rand();
         let sig1 = Keypair::new().sign_message(&[0u8]);
         let signer1 = format!("{}={}", key1, sig1);
         let test_deactivate_stake = test_commands.clone().get_matches_from(vec![
@@ -4738,7 +4727,7 @@ mod tests {
         );
 
         // Test Deactivate Subcommand w/ absent fee payer and nonce authority
-        let key2 = solana_sdk::pubkey::new_rand();
+        let key2 = sonoma_sdk::pubkey::new_rand();
         let sig2 = Keypair::new().sign_message(&[0u8]);
         let signer2 = format!("{}={}", key2, sig2);
         let test_deactivate_stake = test_commands.clone().get_matches_from(vec![
@@ -4861,7 +4850,7 @@ mod tests {
         );
 
         // Split stake offline nonced submission
-        let nonce_account = Pubkey::from([1u8; 32]);
+        let nonce_account = Pubkey::new(&[1u8; 32]);
         let nonce_account_string = nonce_account.to_string();
         let nonce_auth = keypair_from_seed(&[2u8; 32]).unwrap();
         let nonce_auth_pubkey = nonce_auth.pubkey();
@@ -4933,7 +4922,7 @@ mod tests {
         let stake_account_keypair = Keypair::new();
         write_keypair(&stake_account_keypair, tmp_file.as_file_mut()).unwrap();
 
-        let source_stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let source_stake_account_pubkey = sonoma_sdk::pubkey::new_rand();
         let test_merge_stake_account = test_commands.clone().get_matches_from(vec![
             "test",
             "merge-stake",

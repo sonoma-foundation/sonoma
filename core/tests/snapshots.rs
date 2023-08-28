@@ -10,9 +10,7 @@ use {
         accounts_hash_verifier::AccountsHashVerifier,
         snapshot_packager_service::SnapshotPackagerService,
     },
-    solana_gossip::{
-        cluster_info::ClusterInfo, legacy_contact_info::LegacyContactInfo as ContactInfo,
-    },
+    solana_gossip::{cluster_info::ClusterInfo, contact_info::ContactInfo},
     solana_runtime::{
         accounts_background_service::{
             AbsRequestHandler, AbsRequestSender, AccountsBackgroundService, SnapshotRequestHandler,
@@ -34,7 +32,7 @@ use {
         },
         status_cache::MAX_CACHE_ENTRIES,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::Slot,
         genesis_config::{
             ClusterType::{self, Development, Devnet, MainnetBeta, Testnet},
@@ -90,7 +88,7 @@ impl SnapshotTestConfig {
         // snapshots.
         let mut genesis_config_info = create_genesis_config_with_leader(
             10_000,                          // mint_lamports
-            &solana_sdk::pubkey::new_rand(), // validator_pubkey
+            &sonoma_sdk::pubkey::new_rand(), // validator_pubkey
             1,                               // validator_stake_lamports
         );
         genesis_config_info.genesis_config.cluster_type = cluster_type;

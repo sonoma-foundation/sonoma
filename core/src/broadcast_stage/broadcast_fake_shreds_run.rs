@@ -2,7 +2,7 @@ use {
     super::*,
     solana_entry::entry::Entry,
     solana_ledger::shred::{ProcessShredsStats, ReedSolomonCache, Shredder},
-    solana_sdk::{hash::Hash, signature::Keypair},
+    sonoma_sdk::{hash::Hash, signature::Keypair},
 };
 
 #[derive(Clone)]
@@ -159,7 +159,7 @@ impl BroadcastRun for BroadcastFakeShredsRun {
 mod tests {
     use {
         super::*,
-        solana_gossip::legacy_contact_info::LegacyContactInfo as ContactInfo,
+        solana_gossip::contact_info::ContactInfo,
         solana_streamer::socket::SocketAddrSpace,
         std::net::{IpAddr, Ipv4Addr, SocketAddr},
     };
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn test_tvu_peers_ordering() {
         let cluster = ClusterInfo::new(
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), 0),
+            ContactInfo::new_localhost(&sonoma_sdk::pubkey::new_rand(), 0),
             Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
         );

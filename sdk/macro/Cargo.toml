@@ -1,11 +1,9 @@
 [package]
-name = "solana-sdk-macro"
-version = "1.14.20"
-description = "Solana SDK Macro"
+name = "sonoma-sdk-macro"
+version = "1.14.12"
+description = "Sonoma SDK Macro"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-sdk-macro"
+repository = "https://github.com/convowork1/sonoma"
 license = "Apache-2.0"
 edition = "2021"
 

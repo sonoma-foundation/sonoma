@@ -12,7 +12,7 @@ use {
     inflector::Inflector,
     serde_json::Value,
     solana_account_decoder::parse_token::spl_token_ids,
-    solana_sdk::{
+    sonoma_sdk::{
         instruction::CompiledInstruction, message::AccountKeys, pubkey::Pubkey, stake,
         system_program,
     },
@@ -26,8 +26,8 @@ use {
 lazy_static! {
     static ref ADDRESS_LOOKUP_PROGRAM_ID: Pubkey = solana_address_lookup_table_program::id();
     static ref ASSOCIATED_TOKEN_PROGRAM_ID: Pubkey = spl_associated_token_id();
-    static ref BPF_LOADER_PROGRAM_ID: Pubkey = solana_sdk::bpf_loader::id();
-    static ref BPF_UPGRADEABLE_LOADER_PROGRAM_ID: Pubkey = solana_sdk::bpf_loader_upgradeable::id();
+    static ref BPF_LOADER_PROGRAM_ID: Pubkey = sonoma_sdk::bpf_loader::id();
+    static ref BPF_UPGRADEABLE_LOADER_PROGRAM_ID: Pubkey = sonoma_sdk::bpf_loader_upgradeable::id();
     static ref MEMO_V1_PROGRAM_ID: Pubkey = spl_memo_id_v1();
     static ref MEMO_V3_PROGRAM_ID: Pubkey = spl_memo_id_v3();
     static ref STAKE_PROGRAM_ID: Pubkey = stake::program::id();
@@ -193,7 +193,7 @@ mod test {
             }
         );
 
-        let non_parsable_program_id = Pubkey::from([1; 32]);
+        let non_parsable_program_id = Pubkey::new(&[1; 32]);
         assert!(parse(&non_parsable_program_id, &memo_instruction, &no_keys).is_err());
     }
 

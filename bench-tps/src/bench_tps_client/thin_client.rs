@@ -1,7 +1,7 @@
 use {
     crate::bench_tps_client::{BenchTpsClient, Result},
     solana_client::thin_client::ThinClient,
-    solana_sdk::{
+    sonoma_sdk::{
         account::Account,
         client::{AsyncClient, Client, SyncClient},
         commitment_config::CommitmentConfig,

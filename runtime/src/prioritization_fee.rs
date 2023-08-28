@@ -1,6 +1,6 @@
 use {
     solana_measure::measure,
-    solana_sdk::{clock::Slot, pubkey::Pubkey, saturating_add_assign},
+    sonoma_sdk::{clock::Slot, pubkey::Pubkey, saturating_add_assign},
     std::collections::HashMap,
 };
 
@@ -190,7 +190,7 @@ impl PrioritizationFee {
             ("min_prioritization_fee", min_transaction_fee as i64, i64),
         );
         for (account_key, fee) in accounts_fees.iter().take(10) {
-            datapoint_trace!(
+            datapoint_info!(
                 "block_min_prioritization_fee",
                 ("slot", slot as i64, i64),
                 ("entity", account_key.to_string(), String),
@@ -202,7 +202,7 @@ impl PrioritizationFee {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, solana_sdk::pubkey::Pubkey};
+    use {super::*, sonoma_sdk::pubkey::Pubkey};
 
     #[test]
     fn test_update_prioritization_fee() {

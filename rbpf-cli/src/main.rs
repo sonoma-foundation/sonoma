@@ -6,7 +6,7 @@ use {
         create_vm, serialization::serialize_parameters, syscalls::register_syscalls, BpfError,
         ThisInstructionMeter,
     },
-    solana_program_runtime::invoke_context::{prepare_mock_invoke_context, InvokeContext},
+    sonoma_program_runtime::invoke_context::{prepare_mock_invoke_context, InvokeContext},
     solana_rbpf::{
         assembler::assemble,
         elf::Executable,
@@ -14,7 +14,7 @@ use {
         verifier::RequisiteVerifier,
         vm::{Config, DynamicAnalysis, VerifiedExecutable},
     },
-    solana_sdk::{
+    sonoma_sdk::{
         account::AccountSharedData, bpf_loader, instruction::AccountMeta, pubkey::Pubkey,
         sysvar::rent::Rent, transaction_context::TransactionContext,
     },
@@ -172,7 +172,7 @@ native machine code before execting it in the virtual machine.",
     let mut transaction_accounts = vec![
         (
             loader_id,
-            AccountSharedData::new(0, 0, &solana_sdk::native_loader::id()),
+            AccountSharedData::new(0, 0, &sonoma_sdk::native_loader::id()),
         ),
         (
             Pubkey::new_unique(),

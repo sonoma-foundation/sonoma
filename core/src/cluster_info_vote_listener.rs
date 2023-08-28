@@ -34,7 +34,7 @@ use {
         vote_sender_types::ReplayVoteReceiver,
         vote_transaction::VoteTransaction,
     },
-    solana_sdk::{
+    sonoma_sdk::{
         clock::{Slot, DEFAULT_MS_PER_SLOT, DEFAULT_TICKS_PER_SLOT},
         hash::Hash,
         pubkey::Pubkey,
@@ -265,7 +265,6 @@ impl ClusterInfoVoteListener {
                 .unwrap()
         };
         let exit_ = exit.clone();
-        let bank_forks_clone = bank_forks.clone();
         let bank_send_thread = Builder::new()
             .name("solCiBankSend".to_string())
             .spawn(move || {
@@ -274,7 +273,6 @@ impl ClusterInfoVoteListener {
                     verified_vote_label_packets_receiver,
                     poh_recorder,
                     &verified_packets_sender,
-                    bank_forks_clone,
                 );
             })
             .unwrap();
@@ -379,7 +377,6 @@ impl ClusterInfoVoteListener {
         verified_vote_label_packets_receiver: VerifiedLabelVotePacketsReceiver,
         poh_recorder: Arc<RwLock<PohRecorder>>,
         verified_packets_sender: &BankingPacketSender,
-        bank_forks: Arc<RwLock<BankForks>>,
     ) -> Result<()> {
         let mut verified_vote_packets = VerifiedVotePackets::default();
         let mut time_since_lock = Instant::now();
@@ -394,7 +391,11 @@ impl ClusterInfoVoteListener {
                 .read()
                 .unwrap()
                 .would_be_leader(3 * slot_hashes::MAX_ENTRIES as u64 * DEFAULT_TICKS_PER_SLOT);
-            let feature_set = Some(bank_forks.read().unwrap().root_bank().feature_set.clone());
+            let feature_set = poh_recorder
+                .read()
+                .unwrap()
+                .bank()
+                .map(|bank| bank.feature_set.clone());
 
             if let Err(e) = verified_vote_packets.receive_and_process_vote_packets(
                 &verified_vote_label_packets_receiver,
@@ -880,7 +881,7 @@ mod tests {
             },
             vote_sender_types::ReplayVoteSender,
         },
-        solana_sdk::{
+        sonoma_sdk::{
             hash::Hash,
             pubkey::Pubkey,
             signature::{Keypair, Signature, Signer},
@@ -923,7 +924,7 @@ mod tests {
         let (vote_tracker, bank, _, _) = setup();
 
         // Check outdated slots are purged with new root
-        let new_voter = solana_sdk::pubkey::new_rand();
+        let new_voter = sonoma_sdk::pubkey::new_rand();
         // Make separate copy so the original doesn't count toward
         // the ref count, which would prevent cleanup
         let new_voter_ = new_voter;
@@ -1442,11 +1443,9 @@ mod tests {
         let optimistically_confirmed_bank =
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
         let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-        let max_complete_rewards_slot = Arc::new(AtomicU64::default());
         let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
             &exit,
             max_complete_transaction_status_slot,
-            max_complete_rewards_slot,
             bank_forks,
             Arc::new(RwLock::new(BlockCommitmentCache::default())),
             optimistically_confirmed_bank,
@@ -1558,11 +1557,9 @@ mod tests {
         let optimistically_confirmed_bank =
             OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
         let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-        let max_complete_rewards_slot = Arc::new(AtomicU64::default());
         let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
             &exit,
             max_complete_transaction_status_slot,
-            max_complete_rewards_slot,
             bank_forks,
             Arc::new(RwLock::new(BlockCommitmentCache::default())),
             optimistically_confirmed_bank,

@@ -10,7 +10,7 @@ use {
         tpu_connection::TpuConnection,
     },
     log::*,
-    solana_sdk::{
+    sonoma_sdk::{
         account::Account,
         client::{AsyncClient, Client, SyncClient},
         clock::{Slot, MAX_PROCESSING_AGE},

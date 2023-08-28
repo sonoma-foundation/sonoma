@@ -11,7 +11,7 @@ use {
     serde::{Deserialize, Serialize},
     solana_client::rpc_client::RpcClient,
     solana_config_program::{config_instruction, get_config_data, ConfigState},
-    solana_sdk::{
+    sonoma_sdk::{
         hash::{Hash, Hasher},
         message::Message,
         pubkey::Pubkey,
