@@ -15,7 +15,7 @@ use {
         input_validators::{is_pubkey, is_url},
         keypair::DefaultSigner,
     },
-    sonoma_cli_output::{CliValidatorInfo, CliValidatorInfoVec},
+    solana_cli_output::{CliValidatorInfo, CliValidatorInfoVec},
     solana_client::rpc_client::RpcClient,
     solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState},
     solana_remote_wallet::remote_wallet::RemoteWalletManager,
@@ -137,11 +137,11 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
     fn validator_info_subcommands(self) -> Self {
         self.subcommand(
             SubCommand::with_name("validator-info")
-                .about("Publish/get Validator info on Sonoma")
+                .about("Publish/get Validator info on Solana")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(
                     SubCommand::with_name("publish")
-                        .about("Publish Validator info on Sonoma")
+                        .about("Publish Validator info on Solana")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .short("p")
@@ -197,7 +197,7 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
                 )
                 .subcommand(
                     SubCommand::with_name("get")
-                        .about("Get and parse Sonoma Validator info")
+                        .about("Get and parse Solana Validator info")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .index(1)

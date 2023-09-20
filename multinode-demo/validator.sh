@@ -11,14 +11,13 @@ args=(
   --no-poh-speed-test
   --no-os-network-limits-test
 )
-airdrops_enabled=0
+airdrops_enabled=1
 node_sol=500 # 500 SOL: number of SOL to airdrop the node for transaction fees and vote account rent exemption (ignored if airdrops_enabled=0)
 label=
 identity=
 vote_account=
 no_restart=0
 gossip_entrypoint=
-entrypoint_hostname=3.74.241.65
 ledger_dir=
 maybe_allow_private_addr=
 

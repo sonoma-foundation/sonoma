@@ -1,12 +1,12 @@
 use {
-    sonoma_cli::{
+    solana_cli::{
         address_lookup_table::{
             AddressLookupTableCliCommand, DEACTIVATE_LOOKUP_TABLE_WARNING,
             FREEZE_LOOKUP_TABLE_WARNING,
         },
         cli::{process_command, CliCommand, CliConfig},
     },
-    sonoma_cli_output::{CliAddressLookupTable, CliAddressLookupTableCreated, OutputFormat},
+    solana_cli_output::{CliAddressLookupTable, CliAddressLookupTableCreated, OutputFormat},
     solana_faucet::faucet::run_local_faucet,
     solana_sdk::{
         native_token::LAMPORTS_PER_SOL,

@@ -1,12 +1,12 @@
 [package]
-name = "sonoma-keygen"
+name = "solana-keygen"
 version = "1.14.20"
 description = "Solana key generation utility"
 authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 repository = "https://github.com/solana-labs/solana"
 license = "Apache-2.0"
 homepage = "https://solana.com/"
-documentation = "https://docs.rs/sonoma-keygen"
+documentation = "https://docs.rs/solana-keygen"
 edition = "2021"
 
 [dependencies]
@@ -15,14 +15,14 @@ clap = { version = "3.1.5", features = ["cargo"] }
 dirs-next = "2.0.0"
 num_cpus = "1.13.1"
 solana-clap-v3-utils = { path = "../clap-v3-utils", version = "=1.14.20" }
-sonoma-cli-config = { path = "../cli-config", version = "=1.14.20" }
+solana-cli-config = { path = "../cli-config", version = "=1.14.20" }
 solana-remote-wallet = { path = "../remote-wallet", version = "=1.14.20" }
 solana-sdk = { path = "../sdk", version = "=1.14.20" }
 solana-version = { path = "../version", version = "=1.14.20" }
 tiny-bip39 = "0.8.2"
 
 [[bin]]
-name = "sonoma-keygen"
+name = "solana-keygen"
 path = "src/keygen.rs"
 
 [package.metadata.docs.rs]

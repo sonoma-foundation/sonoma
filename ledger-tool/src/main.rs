@@ -178,7 +178,7 @@ fn output_entry(
                     })
                     .map(|meta| meta.into());
 
-                sonoma_cli_output::display::println_transaction(
+                solana_cli_output::display::println_transaction(
                     &transaction,
                     tx_status_meta.as_ref(),
                     "      ",

@@ -21,7 +21,7 @@ use {
         nonce::*,
         offline::*,
     },
-    sonoma_cli_output::{
+    solana_cli_output::{
         display::{build_balance_message, BuildBalanceMessageConfig},
         return_signers_with_config, CliAccount, CliBalance, CliSignatureVerificationStatus,
         CliTransaction, CliTransactionConfirmation, OutputFormat, ReturnSignersConfig,
@@ -526,7 +526,7 @@ pub fn process_airdrop(
 
         if current_balance < pre_balance.saturating_add(lamports) {
             println!("Balance unchanged");
-            println!("Run `sonoma confirm -v {:?}` for more info", signature);
+            println!("Run `solana confirm -v {:?}` for more info", signature);
             Ok("".to_string())
         } else {
             Ok(build_balance_message(current_balance, false, true))

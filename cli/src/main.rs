@@ -6,12 +6,12 @@ use {
         keypair::{CliSigners, DefaultSigner},
         DisplayError,
     },
-    sonoma_cli::{
+    solana_cli::{
         clap_app::get_clap_app,
         cli::{parse_command, process_command, CliCommandInfo, CliConfig},
     },
-    sonoma_cli_config::{Config, ConfigInput},
-    sonoma_cli_output::{
+    solana_cli_config::{Config, ConfigInput},
+    solana_cli_output::{
         display::{println_name_value, println_name_value_or},
         OutputFormat,
     },

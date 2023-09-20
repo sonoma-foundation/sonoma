@@ -22,7 +22,7 @@ use {
         offline::*,
         ArgConstant,
     },
-    sonoma_cli_output::{
+    solana_cli_output::{
         self, display::BuildBalanceMessageConfig, return_signers_with_config, CliBalance,
         CliEpochReward, CliStakeHistory, CliStakeHistoryEntry, CliStakeState, CliStakeType,
         OutputFormat, ReturnSignersConfig,

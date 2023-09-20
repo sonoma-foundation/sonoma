@@ -337,7 +337,7 @@ module.exports = {
   ],
   cliSidebar: [
     "cli",
-    "cli/install-sonoma-cli-tools",
+    "cli/install-solana-cli-tools",
     {
       type: "category",
       label: "Command-line Wallets",

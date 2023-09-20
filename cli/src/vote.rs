@@ -22,7 +22,7 @@ use {
         nonce::*,
         offline::*,
     },
-    sonoma_cli_output::{
+    solana_cli_output::{
         return_signers_with_config, CliEpochVotingHistory, CliLockout, CliVoteAccount,
         ReturnSignersConfig,
     },
