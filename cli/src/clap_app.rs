@@ -5,7 +5,7 @@ use {
     },
     clap::{App, AppSettings, Arg, ArgGroup, SubCommand},
     solana_clap_utils::{self, input_validators::*, keypair::*},
-    sonoma_cli_config::CONFIG_FILE,
+    solana_cli_config::CONFIG_FILE,
 };
 
 pub fn get_clap_app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, 'v> {
@@ -36,7 +36,7 @@ pub fn get_clap_app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> A
                 .global(true)
                 .validator(is_url_or_moniker)
                 .help(
-                    "URL for Sonoma's JSON RPC or moniker (or their first letter): \
+                    "URL for Solana's JSON RPC or moniker (or their first letter): \
                        [mainnet-beta, testnet, devnet, localhost]",
                 ),
         )
@@ -47,7 +47,7 @@ pub fn get_clap_app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> A
                 .takes_value(true)
                 .global(true)
                 .validator(is_url)
-                .help("WebSocket URL for the sonoma cluster"),
+                .help("WebSocket URL for the solana cluster"),
         )
         .arg(
             Arg::with_name("keypair")
@@ -137,7 +137,7 @@ pub fn get_clap_app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> A
         .wallet_subcommands()
         .subcommand(
             SubCommand::with_name("config")
-                .about("Sonoma command-line tool configuration settings")
+                .about("Solana command-line tool configuration settings")
                 .aliases(&["get", "set"])
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(

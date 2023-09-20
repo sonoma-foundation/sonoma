@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# sonoma-cli integration sanity test
+# solana-cli integration sanity test
 #
 set -e
 

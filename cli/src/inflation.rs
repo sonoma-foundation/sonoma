@@ -6,7 +6,7 @@ use {
         input_validators::is_valid_pubkey,
         keypair::*,
     },
-    sonoma_cli_output::{
+    solana_cli_output::{
         CliEpochRewardshMetadata, CliInflation, CliKeyedEpochReward, CliKeyedEpochRewards,
     },
     solana_client::rpc_client::RpcClient,

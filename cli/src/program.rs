@@ -12,7 +12,7 @@ use {
     solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig},
     solana_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter},
     solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*},
-    sonoma_cli_output::{
+    solana_cli_output::{
         CliProgram, CliProgramAccountType, CliProgramAuthority, CliProgramBuffer, CliProgramId,
         CliUpgradeableBuffer, CliUpgradeableBuffers, CliUpgradeableProgram,
         CliUpgradeableProgramClosed, CliUpgradeablePrograms,
@@ -403,7 +403,7 @@ impl ProgramSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("deploy")
-                .about("Deploy a non-upgradeable program. Use `sonoma program deploy` instead to deploy upgradeable programs")
+                .about("Deploy a non-upgradeable program. Use `solana program deploy` instead to deploy upgradeable programs")
                 .setting(AppSettings::Hidden)
                 .arg(
                     Arg::with_name("program_location")
@@ -2296,15 +2296,15 @@ fn report_ephemeral_mnemonic(words: usize, mnemonic: bip39::Mnemonic) {
         divider
     );
     eprintln!(
-        "`sonoma-keygen recover` and the following {}-word seed phrase:",
+        "`solana-keygen recover` and the following {}-word seed phrase:",
         words
     );
     eprintln!("{}\n{}\n{}", divider, phrase, divider);
     eprintln!("To resume a deploy, pass the recovered keypair as the");
-    eprintln!("[BUFFER_SIGNER] to `sonoma program deploy` or `sonoma program write-buffer'.");
+    eprintln!("[BUFFER_SIGNER] to `solana program deploy` or `solana program write-buffer'.");
     eprintln!("Or to recover the account's lamports, pass it as the");
     eprintln!(
-        "[BUFFER_ACCOUNT_ADDRESS] argument to `sonoma program close`.\n{}",
+        "[BUFFER_ACCOUNT_ADDRESS] argument to `solana program close`.\n{}",
         divider
     );
 }
@@ -2318,7 +2318,7 @@ mod tests {
             cli::{parse_command, process_command},
         },
         serde_json::Value,
-        sonoma_cli_output::OutputFormat,
+        solana_cli_output::OutputFormat,
         solana_sdk::signature::write_keypair_file,
     };
 

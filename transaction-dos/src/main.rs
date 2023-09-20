@@ -5,7 +5,7 @@ use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
     solana_clap_utils::input_parsers::pubkey_of,
-    sonoma_cli::{cli::CliConfig, program::process_deploy},
+    solana_cli::{cli::CliConfig, program::process_deploy},
     solana_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
     solana_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
     solana_gossip::gossip_service::discover,

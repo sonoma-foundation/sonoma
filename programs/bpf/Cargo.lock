@@ -4233,7 +4233,7 @@ dependencies = [
  "solana-bpf-rust-invoke",
  "solana-bpf-rust-realloc",
  "solana-bpf-rust-realloc-invoke",
- "sonoma-cli-output",
+ "solana-cli-output",
  "solana-ledger",
  "solana-logger 1.14.20",
  "solana-measure",
@@ -4633,7 +4633,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sonoma-cli-config"
+name = "solana-cli-config"
 version = "1.14.20"
 dependencies = [
  "dirs-next",
@@ -4647,7 +4647,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sonoma-cli-output"
+name = "solana-cli-output"
 version = "1.14.20"
 dependencies = [
  "Inflector",
@@ -4663,7 +4663,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-clap-utils",
- "sonoma-cli-config",
+ "solana-cli-config",
  "solana-client",
  "solana-sdk 1.14.20",
  "solana-transaction-status",
@@ -4847,7 +4847,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "solana-clap-utils",
- "sonoma-cli-config",
+ "solana-cli-config",
  "solana-logger 1.14.20",
  "solana-metrics",
  "solana-sdk 1.14.20",
@@ -5730,7 +5730,7 @@ dependencies = [
  "log",
  "serde_derive",
  "serde_json",
- "sonoma-cli-output",
+ "solana-cli-output",
  "solana-client",
  "solana-core",
  "solana-gossip",
@@ -5797,7 +5797,7 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "solana-clap-utils",
- "sonoma-cli-config",
+ "solana-cli-config",
  "solana-client",
  "solana-core",
  "solana-download-utils",

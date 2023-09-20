@@ -8,7 +8,7 @@ use {
         input_parsers::pubkeys_of,
         input_validators::{is_parsable, is_pubkey_or_keypair, is_url},
     },
-    sonoma_cli_output::display::format_labeled_address,
+    solana_cli_output::display::format_labeled_address,
     solana_client::{client_error, rpc_client::RpcClient, rpc_response::RpcVoteAccountStatus},
     solana_metrics::{datapoint_error, datapoint_info},
     solana_notifier::Notifier,
@@ -67,7 +67,7 @@ fn get_config() -> Config {
                 .takes_value(true)
                 .global(true)
                 .help("Configuration file to use");
-            if let Some(ref config_file) = *sonoma_cli_config::CONFIG_FILE {
+            if let Some(ref config_file) = *solana_cli_config::CONFIG_FILE {
                 arg.default_value(config_file)
             } else {
                 arg
@@ -155,9 +155,9 @@ fn get_config() -> Config {
         .get_matches();
 
     let config = if let Some(config_file) = matches.value_of("config_file") {
-        sonoma_cli_config::Config::load(config_file).unwrap_or_default()
+        solana_cli_config::Config::load(config_file).unwrap_or_default()
     } else {
-        sonoma_cli_config::Config::default()
+        solana_cli_config::Config::default()
     };
 
     let interval = Duration::from_secs(value_t_or_exit!(matches, "interval", u64));
