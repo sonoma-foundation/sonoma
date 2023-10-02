@@ -18,7 +18,7 @@ lazy_static! {
     /// [lazy_static]: https://docs.rs/lazy_static
     pub static ref CONFIG_FILE: Option<String> = {
         dirs_next::home_dir().map(|mut path| {
-            path.extend([".config", "solana", "cli", "config.yml"]);
+            path.extend([".config", "sonoma", "cli", "config.yml"]);
             path.to_str().unwrap().to_string()
         })
     };
@@ -70,10 +70,10 @@ impl Default for Config {
     fn default() -> Self {
         let keypair_path = {
             let mut keypair_path = dirs_next::home_dir().expect("home directory");
-            keypair_path.extend([".config", "solana", "id.json"]);
+            keypair_path.extend([".config", "sonoma", "id.json"]);
             keypair_path.to_str().unwrap().to_string()
         };
-        let json_rpc_url = "https://api.mainnet-beta.solana.com".to_string();
+        let json_rpc_url = "http://3.74.241.65:8899".to_string();
 
         // Empty websocket_url string indicates the client should
         // `Config::compute_websocket_url(&json_rpc_url)`

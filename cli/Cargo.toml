@@ -54,7 +54,7 @@ solana-test-validator = { path = "../test-validator", version = "=1.14.20" }
 tempfile = "3.4.0"
 
 [[bin]]
-name = "solana"
+name = "sonoma"
 path = "src/main.rs"
 
 [package.metadata.docs.rs]

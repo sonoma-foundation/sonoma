@@ -82,10 +82,10 @@ if [[ $CI_OS_NAME = windows ]]; then
     cargo-build-sbf
     cargo-test-bpf
     cargo-test-sbf
-    solana
+    sonoma
     solana-install
     solana-install-init
-    solana-keygen
+    sonoma-keygen
     solana-stake-accounts
     solana-test-validator
     solana-tokens
@@ -94,12 +94,12 @@ else
   ./fetch-perf-libs.sh
 
   BINS=(
-    solana
+    sonoma
     solana-bench-tps
     solana-faucet
     solana-gossip
     solana-install
-    solana-keygen
+    sonoma-keygen
     solana-ledger-tool
     solana-log-analyzer
     solana-net-shaper

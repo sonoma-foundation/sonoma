@@ -403,7 +403,7 @@ impl ProgramSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("deploy")
-                .about("Deploy a non-upgradeable program. Use `solana program deploy` instead to deploy upgradeable programs")
+                .about("Deploy a non-upgradeable program. Use `sonoma program deploy` instead to deploy upgradeable programs")
                 .setting(AppSettings::Hidden)
                 .arg(
                     Arg::with_name("program_location")
@@ -2296,15 +2296,15 @@ fn report_ephemeral_mnemonic(words: usize, mnemonic: bip39::Mnemonic) {
         divider
     );
     eprintln!(
-        "`solana-keygen recover` and the following {}-word seed phrase:",
+        "`sonoma-keygen recover` and the following {}-word seed phrase:",
         words
     );
     eprintln!("{}\n{}\n{}", divider, phrase, divider);
     eprintln!("To resume a deploy, pass the recovered keypair as the");
-    eprintln!("[BUFFER_SIGNER] to `solana program deploy` or `solana program write-buffer'.");
+    eprintln!("[BUFFER_SIGNER] to `sonoma program deploy` or `sonoma program write-buffer'.");
     eprintln!("Or to recover the account's lamports, pass it as the");
     eprintln!(
-        "[BUFFER_ACCOUNT_ADDRESS] argument to `solana program close`.\n{}",
+        "[BUFFER_ACCOUNT_ADDRESS] argument to `sonoma program close`.\n{}",
         divider
     );
 }
