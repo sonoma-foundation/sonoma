@@ -84,20 +84,20 @@ if [[ $CI_OS_NAME = windows ]]; then
     cargo-test-sbf
     sonoma
     sonoma-keygen
-    solana-stake-accounts
+    sonoma-stake-accounts
     solana-test-validator
-    solana-tokens
+    sonoma-tokens
   )
 else
   ./fetch-perf-libs.sh
 
   BINS=(
     sonoma
-    solana-bench-tps
+    sonoma-bench-tps
     sonoma-faucet
     sonoma-gossip
     sonoma-keygen
-    solana-ledger-tool
+    sonoma-ledger-tool
     sonoma-log-analyzer
     sonoma-net-shaper
     sonoma-sys-tuner
@@ -112,11 +112,11 @@ else
       cargo-build-sbf
       cargo-test-bpf
       cargo-test-sbf
-      solana-dos
-      solana-stake-accounts
+      sonoma-dos
+      sonoma-stake-accounts
       solana-test-validator
-      solana-tokens
-      solana-watchtower
+      sonoma-tokens
+      sonoma-watchtower
     )
   fi
 
