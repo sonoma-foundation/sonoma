@@ -83,8 +83,6 @@ if [[ $CI_OS_NAME = windows ]]; then
     cargo-test-bpf
     cargo-test-sbf
     sonoma
-    solana-install
-    solana-install-init
     sonoma-keygen
     solana-stake-accounts
     solana-test-validator
@@ -96,14 +94,13 @@ else
   BINS=(
     sonoma
     solana-bench-tps
-    solana-faucet
-    solana-gossip
-    solana-install
+    sonoma-faucet
+    sonoma-gossip
     sonoma-keygen
     solana-ledger-tool
-    solana-log-analyzer
-    solana-net-shaper
-    solana-sys-tuner
+    sonoma-log-analyzer
+    sonoma-net-shaper
+    sonoma-sys-tuner
     solana-validator
     rbpf-cli
   )
@@ -116,7 +113,6 @@ else
       cargo-test-bpf
       cargo-test-sbf
       solana-dos
-      solana-install-init
       solana-stake-accounts
       solana-test-validator
       solana-tokens
@@ -126,7 +122,7 @@ else
 
   #XXX: Ensure `solana-genesis` is built LAST!
   # See https://github.com/solana-labs/solana/issues/5826
-  BINS+=(solana-genesis)
+  BINS+=(sonoma-genesis)
 fi
 
 binArgs=()

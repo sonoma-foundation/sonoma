@@ -32,7 +32,7 @@ crate-type = ["lib"]
 name = "solana_faucet"
 
 [[bin]]
-name = "solana-faucet"
+name = "sonoma-faucet"
 path = "src/bin/faucet.rs"
 
 [package.metadata.docs.rs]

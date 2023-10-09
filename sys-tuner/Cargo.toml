@@ -27,7 +27,7 @@ sysctl = "0.4.4"
 name = "solana_sys_tuner"
 
 [[bin]]
-name = "solana-sys-tuner"
+name = "sonoma-sys-tuner"
 path = "src/main.rs"
 
 [package.metadata.docs.rs]
