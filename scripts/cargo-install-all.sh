@@ -148,6 +148,10 @@ for bin in "${BINS[@]}"; do
   cp -fv "target/$buildVariant/$bin" "$installDir"/bin
 done
 
+# Rename validator and test-validator bins
+mv "$installDir/bin/solana-validator" "$installDir/bin/sonoma-validator"
+mv "$installDir/bin/solana-test-validator" "$installDir/bin/sonoma-test-validator"
+
 if [[ -d target/perf-libs ]]; then
   cp -a target/perf-libs "$installDir"/bin/perf-libs
 fi
