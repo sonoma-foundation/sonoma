@@ -65,7 +65,7 @@ name = "crds_gossip_pull"
 name = "crds_shards"
 
 [[bin]]
-name = "solana-gossip"
+name = "sonoma-gossip"
 path = "src/main.rs"
 
 [package.metadata.docs.rs]

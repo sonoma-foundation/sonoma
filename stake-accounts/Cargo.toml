@@ -23,3 +23,7 @@ solana-runtime = { path = "../runtime", version = "=1.14.20" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
+
+[[bin]]
+name = "sonoma-stake-accounts"
+path = "src/main.rs"

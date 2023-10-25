@@ -83,27 +83,24 @@ if [[ $CI_OS_NAME = windows ]]; then
     cargo-test-bpf
     cargo-test-sbf
     sonoma
-    solana-install
-    solana-install-init
     sonoma-keygen
-    solana-stake-accounts
+    sonoma-stake-accounts
     solana-test-validator
-    solana-tokens
+    sonoma-tokens
   )
 else
   ./fetch-perf-libs.sh
 
   BINS=(
     sonoma
-    solana-bench-tps
-    solana-faucet
-    solana-gossip
-    solana-install
+    sonoma-bench-tps
+    sonoma-faucet
+    sonoma-gossip
     sonoma-keygen
-    solana-ledger-tool
-    solana-log-analyzer
-    solana-net-shaper
-    solana-sys-tuner
+    sonoma-ledger-tool
+    sonoma-log-analyzer
+    sonoma-net-shaper
+    sonoma-sys-tuner
     solana-validator
     rbpf-cli
   )
@@ -115,18 +112,17 @@ else
       cargo-build-sbf
       cargo-test-bpf
       cargo-test-sbf
-      solana-dos
-      solana-install-init
-      solana-stake-accounts
+      sonoma-dos
+      sonoma-stake-accounts
       solana-test-validator
-      solana-tokens
-      solana-watchtower
+      sonoma-tokens
+      sonoma-watchtower
     )
   fi
 
   #XXX: Ensure `solana-genesis` is built LAST!
   # See https://github.com/solana-labs/solana/issues/5826
-  BINS+=(solana-genesis)
+  BINS+=(sonoma-genesis)
 fi
 
 binArgs=()
@@ -151,6 +147,10 @@ mkdir -p "$installDir/bin"
 for bin in "${BINS[@]}"; do
   cp -fv "target/$buildVariant/$bin" "$installDir"/bin
 done
+
+# Rename validator and test-validator bins
+mv "$installDir/bin/solana-validator" "$installDir/bin/sonoma-validator"
+mv "$installDir/bin/solana-test-validator" "$installDir/bin/sonoma-test-validator"
 
 if [[ -d target/perf-libs ]]; then
   cp -a target/perf-libs "$installDir"/bin/perf-libs

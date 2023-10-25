@@ -28,7 +28,7 @@ solana-vote-program = { path = "../programs/vote", version = "=1.14.20" }
 tempfile = "3.4.0"
 
 [[bin]]
-name = "solana-genesis"
+name = "sonoma-genesis"
 path = "src/main.rs"
 
 [lib]

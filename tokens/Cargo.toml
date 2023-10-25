@@ -37,3 +37,7 @@ bincode = "1.3.3"
 solana-logger = { path = "../logger", version = "=1.14.20" }
 solana-streamer = { path = "../streamer", version = "=1.14.20" }
 solana-test-validator = { path = "../test-validator", version = "=1.14.20" }
+
+[[bin]]
+name = "sonoma-tokens"
+path = "src/main.rs"
