@@ -21,7 +21,7 @@ archName="sonoma-x86_64-unknown-linux-gnu.tar.bz2"
 tempDir="$(mktemp -d)"
 
 # Downloading and unpacking the Sonoma CLI Binary Archive
-sonomaURL="https://github.com/convowork1/sonoma/raw/master/bin/$archName"
+sonomaURL="https://github.com/sonoma-foundation/sonoma/releases/download/testnet/$archName"
 
 if curl -LJO $sonomaURL && tar jxf $archName -C "$tempDir"; then
     rm $archName
