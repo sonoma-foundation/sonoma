@@ -70,5 +70,7 @@ fi
 
 source ~/.profile
 
+sonoma config set --url "$testnet" > /dev/null 2>&1
+
 echo "Sonoma CLI has been installed successfully"
 echo "You can now use 'sonoma' command in your terminal"
