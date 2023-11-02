@@ -39,8 +39,8 @@ mkdir -p "$installDir"
 cp -R "$tempDir"/* "$installDir"
 
 # Set the config
-devnet="http://3.74.241.65:8899"
-"$installDir/sonoma" config set --url $devnet >  /dev/null 2>&1
+testnet="https://api.testnet.sonomachain.com "
+"$installDir/sonoma" config set --url testnet >  /dev/null 2>&1
 
 rm -rf "$tempDir"
 
