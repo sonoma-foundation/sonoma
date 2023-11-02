@@ -39,7 +39,7 @@ mkdir -p "$installDir"
 cp -R "$tempDir"/* "$installDir"
 
 # Set the config
-testnet="https://api.testnet.sonomachain.com "
+testnet="https://api.testnet.sonomachain.com"
 "$installDir/sonoma" config set --url testnet >  /dev/null 2>&1
 
 rm -rf "$tempDir"
