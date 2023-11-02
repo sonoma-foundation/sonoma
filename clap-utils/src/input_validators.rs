@@ -213,7 +213,7 @@ where
 
 pub fn normalize_to_url_if_moniker<T: AsRef<str>>(url_or_moniker: T) -> String {
     match url_or_moniker.as_ref() {
-        "t" | "testnet" => "http://3.74.241.65:8899",
+        "t" | "testnet" => "https://api.testnet.sonomachain.com",
         "l" | "localhost" => "http://localhost:8899",
         url => url,
     }

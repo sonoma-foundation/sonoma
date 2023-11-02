@@ -73,7 +73,7 @@ impl Default for Config {
             keypair_path.extend([".config", "sonoma", "id.json"]);
             keypair_path.to_str().unwrap().to_string()
         };
-        let json_rpc_url = "http://3.74.241.65:8899".to_string();
+        let json_rpc_url = "https://api.testnet.sonomachain.com".to_string();
 
         // Empty websocket_url string indicates the client should
         // `Config::compute_websocket_url(&json_rpc_url)`
