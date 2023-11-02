@@ -101,7 +101,7 @@ else
     sonoma-log-analyzer
     sonoma-net-shaper
     sonoma-sys-tuner
-    solana-validator
+    sonoma-validator
     rbpf-cli
   )
 
@@ -149,7 +149,6 @@ for bin in "${BINS[@]}"; do
 done
 
 # Rename validator and test-validator bins
-mv "$installDir/bin/solana-validator" "$installDir/bin/sonoma-validator"
 mv "$installDir/bin/solana-test-validator" "$installDir/bin/sonoma-test-validator"
 
 if [[ -d target/perf-libs ]]; then
